@@ -25,12 +25,26 @@ On first start an existing `state.json` is imported and renamed to `state.json.m
 - `PUT|DELETE /api/{rooms,items,tasks}/:id`, `POST /api/tasks/:id/complete` (`{date?}`), `POST /api/floors` (`{name}`)
 - `GET /api/audit?limit=`
 
+## MCP server (agent access)
+Streamable HTTP, stateless, at `POST /mcp` on the same port. It uses the same auth as the app: with `HOME_OS_PASSWORD` set, send
+`Authorization: Bearer <password>` (Basic also works). All writes are audited with actor `agent`.
+
+Tools: `get_overview`, `search_items`, `get_item`, `search_tasks` (read); `add_item`, `update_item`, `add_task`, `update_task`,
+`complete_task` (write); `delete_item`, `delete_task` (require `confirm: true`; the tool descriptions tell the model to ask you first).
+Rooms are referenced by name. Room layout (add/move rooms, floors) is intentionally UI-only for now.
+
+Connect from Claude Code (once the app is reachable over HTTPS):
+
+    claude mcp add --transport http maha https://maha.example.com/mcp --header "Authorization: Bearer <password>"
+
+For claude.ai custom connectors, which expect OAuth rather than a static token, see "Ideas / next".
+
 ## Deploy (Hetzner, Docker)
     docker build -t maha .
     docker run -d --name maha -p 3000:3000 -v maha-data:/app/data -e HOME_OS_PASSWORD=... maha
 Back up by copying `backups/*.db` (or the named volume) off the box.
 
 ## Ideas / next
-- Agent tools (in-app chat and/or MCP server) on top of the REST API
+- OAuth for the MCP endpoint (needed for claude.ai custom connectors); in-app chat panel on the same tools
 - Platform auth instead of the shared password
 - Push notifications (calendar feed .ics is the stand-in today)

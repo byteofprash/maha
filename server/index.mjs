@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { openDb, ValidationError } from "./db.mjs";
+import { mountMcp } from "./mcp.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
@@ -25,6 +26,8 @@ app.use((req, res, next) => {
     const pass = Buffer.from(b64, "base64").toString().split(":").slice(1).join(":");
     if (pass === PASSWORD) return next();
   }
+  // MCP clients usually send a bearer token instead of Basic auth
+  if (scheme === "Bearer" && b64 === PASSWORD) return next();
   res.set("WWW-Authenticate", 'Basic realm="MAHA"').status(401).send("Authentication required");
 });
 
@@ -103,6 +106,9 @@ app.post("/api/tasks/:id/complete", wrap((req, res) => {
   if (!task) return res.status(404).json({ error: "task not found" });
   res.json({ task });
 }));
+
+// ---- MCP server (agent tools) -----------------------------------------------------
+mountMcp(app, store);
 
 // ---- calendar feed (works as a stand-in for notifications) -----------------------
 const ics = (s) => String(s ?? "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
