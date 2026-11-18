@@ -13,5 +13,7 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/server ./server
 COPY --from=build /app/package.json ./
 RUN mkdir -p /app/data
+# SQLite DB + backups live here: mount a persistent volume on /app/data
+VOLUME /app/data
 EXPOSE 3000
 CMD ["node", "server/index.mjs"]
