@@ -1,5 +1,6 @@
 import { addDays, today, vitality } from "../src/lib/dates";
 import { PLANT_KEYS, pickPlant, plantFor, stageOf } from "../src/lib/plants";
+import { daysLeftInWeek, todayBuckets } from "../src/lib/today";
 import type { Task } from "../src/lib/types";
 
 let bad = 0;
@@ -47,6 +48,21 @@ for (let i = 0; i < PLANT_KEYS.length * 3; i++) {
 }
 check("first six are all different", new Set(made.slice(0, PLANT_KEYS.length).map((m) => m.plant)).size === PLANT_KEYS.length);
 check("shuffle never returns the same plant", Array.from({ length: 50 }, () => pickPlant([], "daisy")).every((p) => p !== "daisy"));
+
+// the Today window: today (+ anything already waiting) and the rest of the week, Monday to Sunday
+check("days left: Mon 6, Thu 3, Sat 1, Sun 0",
+  [daysLeftInWeek("2026-11-16"), daysLeftInWeek("2026-11-19"), daysLeftInWeek("2026-11-21"), daysLeftInWeek("2026-11-22")].join() === "6,3,1,0");
+const due = (id: string, dueDate: string) => ({ id, dueDate });
+const thu = "2026-11-19";
+const sample = [due("late", "2026-11-12"), due("today", thu), due("fri", "2026-11-20"), due("sun", "2026-11-22"), due("mon", "2026-11-23"), due("far", "2026-12-25")];
+const onThu = todayBuckets(sample, (t) => t.dueDate, thu);
+check("Thursday: today = waiting + today", onThu.today.map((t) => t.id).join() === "late,today", onThu.today.map((t) => t.id).join());
+check("Thursday: upcoming runs to Sunday, not next Monday", onThu.upcoming.map((t) => t.id).join() === "fri,sun", onThu.upcoming.map((t) => t.id).join());
+const onSun = todayBuckets(sample, (t) => t.dueDate, "2026-11-22");
+check("Sunday: nothing 'coming up' (next week starts tomorrow); earlier days are waiting", onSun.upcoming.length === 0 && onSun.today.map((t) => t.id).join() === "late,today,fri,sun", onSun.today.map((t) => t.id).join());
+const onMon = todayBuckets(sample, (t) => t.dueDate, "2026-11-23");
+check("Monday: new week opens up (Mon is today, rest of week empty here)", onMon.today.some((t) => t.id === "mon") && onMon.upcoming.length === 0);
+check("held tile keeps its bucket via when()", todayBuckets([due("x", "2026-12-25")], () => thu, thu).today.length === 1);
 
 if (bad) { console.error(`${bad} ritual check(s) FAILED`); process.exit(1); }
 console.log("ritual checks: all pass");

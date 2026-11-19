@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus, Sprout } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 import { RitualTile } from "@/components/ritual-tile";
 import { TaskDialog } from "@/components/dialogs";
 import { useStore } from "@/lib/store";
+import { useTend } from "@/lib/use-tend";
 import { dueStatus } from "@/lib/dates";
 import { TASK_CATEGORIES, type Task } from "@/lib/types";
 
@@ -15,23 +16,13 @@ const GROUPS: { key: ReturnType<typeof dueStatus>[]; title: string }[] = [
 ];
 
 export default function Rituals() {
-  const { state, completeTask } = useStore();
+  const { state } = useStore();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("");
   const [room, setRoom] = useState("");
   const [editing, setEditing] = useState<Task | "new">();
 
-  // A tended ritual keeps its place for a moment so you can watch the plant perk up before it moves to a calmer section.
-  const [held, setHeld] = useState<Record<string, string>>({});
-  const timers = useRef<number[]>([]);
-  const tend = (t: Task) => {
-    setHeld((h) => ({ ...h, [t.id]: t.dueDate }));
-    completeTask(t.id);
-    timers.current.push(
-      window.setTimeout(() => setHeld(({ [t.id]: _gone, ...rest }) => rest), 2600)
-    );
-  };
-  const when = (t: Task) => held[t.id] ?? t.dueDate;
+  const { tend, when, held } = useTend();
 
   const filtered = useMemo(
     () =>

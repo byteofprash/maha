@@ -21,6 +21,9 @@ same for rituals created by the MCP agent. The ritual dialog can shuffle it.
   worst state is "Waiting for you"). Stages: thriving > content > thirsty > waiting. Colour drains, leaves sag, the stem bends and
   the flower bows and closes. Drawn in `src/components/plant.tsx` (SVG + CSS, no libraries, respects reduced-motion).
 - "Tended to it" waters the plant (droplets + glow) and the tile keeps its place for ~2.5s before moving to a calmer section.
+- **Today page** (`src/views/Today.tsx`) is deliberately minimal: a greeting, "Today" (due today *plus anything already waiting*) and
+  "Later this week" (tomorrow up to Sunday; weeks run Mon-Sun, so on Sunday there is no "later"). Same `RitualTile` cards as Rituals.
+  No stats, warranties or counters there. Window logic is `src/lib/today.ts` (tested). Tending uses the shared `useTend()` hook.
 - Logic checks: `npm run check` (icon rules + `scripts/check-rituals.ts`), also run by the deploy workflow.
 
 ## Small decision models
