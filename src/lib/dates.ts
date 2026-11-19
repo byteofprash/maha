@@ -88,6 +88,10 @@ export function dueLabel(dueDate: string, now = today()): string {
   return parse(dueDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: d > 300 ? "numeric" : undefined });
 }
 
+/** "Fri 20 Nov": short, with the weekday, for the details view. */
+export const shortDate = (s: string) =>
+  s ? parse(s).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) : "—";
+
 export const fmtDate = (s: string) =>
   s ? parse(s).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "—";
 

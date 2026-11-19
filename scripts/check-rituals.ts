@@ -1,6 +1,7 @@
 import { addDays, lastTendedLabel, pendingLabel, today, vitality } from "../src/lib/dates";
 import { PLANT_KEYS, pickPlant, plantFor, stageOf } from "../src/lib/plants";
 import { daysLeftInWeek, todayBuckets } from "../src/lib/today";
+import { ritualFacts } from "../src/lib/ritual-facts";
 import type { Task } from "../src/lib/types";
 
 let bad = 0;
@@ -59,6 +60,16 @@ check("long gaps read in months", lastTendedLabel(lbl(addDays(t0, -200), t0)) ==
 check("pending: 3 days / 1 day / due today / tomorrow / in 5 days",
   [pendingLabel(lbl(null, addDays(t0, -3))), pendingLabel(lbl(null, addDays(t0, -1))), pendingLabel(lbl(null, t0)), pendingLabel(lbl(null, addDays(t0, 1))), pendingLabel(lbl(null, addDays(t0, 5)))].join("|")
   === "3 days pending|1 day pending|Due today|Due tomorrow|Due in 5 days");
+
+// the details view's facts
+const hist = [addDays(t0, -13), addDays(t0, -23), addDays(t0, -33)];
+const f1 = ritualFacts({ ...lbl(addDays(t0, -13), addDays(t0, -3), hist), every: 10, unit: "day" });
+check("facts: rhythm, pending, last tended", f1.rhythm === "Every 10 days" && f1.next.when === "3 days pending" && f1.last?.ago === "13 days ago", JSON.stringify({ r: f1.rhythm, w: f1.next.when, a: f1.last?.ago }));
+check("facts: history newest first, counted", f1.times === 3 && f1.recent.length === 3);
+const many = ritualFacts(lbl(t0, addDays(t0, 10), Array.from({ length: 30 }, (_, i) => addDays(t0, -i))));
+check("facts: shows at most 6 recent dates", many.recent.length === 6 && many.times === 30);
+const brandNew = ritualFacts(lbl(null, addDays(t0, 10)));
+check("facts: a brand-new ritual has no 'last tended'", brandNew.last === null && brandNew.recent.length === 0 && brandNew.times === 0);
 
 // the Today window: today (+ anything already waiting) and the rest of the week, Monday to Sunday
 check("days left: Mon 6, Thu 3, Sat 1, Sun 0",

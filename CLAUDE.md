@@ -24,6 +24,11 @@ same for rituals created by the MCP agent. The ritual dialog can shuffle it.
 - **Today page** (`src/views/Today.tsx`) is deliberately minimal: a greeting, "Today" (due today *plus anything already waiting*) and
   "Later this week" (tomorrow up to Sunday; weeks run Mon-Sun, so on Sunday there is no "later"). Same `RitualTile` cards as Rituals.
   No stats, warranties or counters there. Window logic is `src/lib/today.ts` (tested). Tending uses the shared `useTend()` hook.
+- **Tapping a ritual card never opens an editor**: it opens a read-only **details view** (`src/components/ritual-details.tsx`: the plant and
+  its mood, next care, last tended, rhythm, kind, what it looks after, where, the note, recent history, with **Tended to it** and **Edit**).
+  The edit form (`TaskDialog`) opens only from Edit, and saving returns to the details. One `RitualDetailsProvider` (in `main.tsx`) serves
+  every card on every page via `useRitualDetails().open(id)`; cards take no `onEdit`. Wording lives in `src/lib/ritual-facts.ts` (tested).
+- Rituals page uses the compact tile (about a quarter of the full tile's area); Today and House use the full tile.
 - Logic checks: `npm run check` (icon rules + `scripts/check-rituals.ts`), also run by the deploy workflow.
 
 ## House page

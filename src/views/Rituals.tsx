@@ -20,7 +20,7 @@ export default function Rituals() {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("");
   const [room, setRoom] = useState("");
-  const [editing, setEditing] = useState<Task | "new">();
+  const [creating, setCreating] = useState(false);
 
   const { tend, when, held } = useTend();
 
@@ -45,7 +45,7 @@ export default function Rituals() {
           <option value="">All rooms</option>
           {state.rooms.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
         </Select>
-        <Button className="ml-auto" onClick={() => setEditing("new")}><Plus /> New ritual</Button>
+        <Button className="ml-auto" onClick={() => setCreating(true)}><Plus /> New ritual</Button>
       </div>
 
       {/* one grid, so a tile keeps its place (and its animation) while the others move around it */}
@@ -57,7 +57,7 @@ export default function Rituals() {
             <h2 key={`h-${g.title}`} className="col-span-full mt-2 text-sm font-semibold text-muted-foreground first:mt-0">
               {g.title} · {rows.length}
             </h2>,
-            ...rows.map((t) => <RitualTile key={t.id} task={t} onEdit={setEditing} onTend={tend} compact />),
+            ...rows.map((t) => <RitualTile key={t.id} task={t} onTend={tend} compact />),
           ];
         })}
       </div>
@@ -71,7 +71,7 @@ export default function Rituals() {
         </div>
       )}
 
-      {editing && <TaskDialog task={editing === "new" ? undefined : editing} onClose={() => setEditing(undefined)} />}
+      {creating && <TaskDialog onClose={() => setCreating(false)} />}
     </div>
   );
 }

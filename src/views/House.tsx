@@ -23,7 +23,7 @@ export default function House() {
   const [edit, setEdit] = useState(false);
   const [selId, setSelId] = useState<string | null>(null);
   const [roomDlg, setRoomDlg] = useState<Room | "new">();
-  const [taskDlg, setTaskDlg] = useState<{ task?: Task; defaults?: Partial<Task> }>();
+  const [taskDlg, setTaskDlg] = useState<{ defaults?: Partial<Task> }>();
   const [itemDlg, setItemDlg] = useState<{ item?: Item; defaults?: Partial<Item> }>();
   const [newFloor, setNewFloor] = useState("");
   const canvas = useRef<HTMLDivElement>(null);
@@ -185,7 +185,7 @@ export default function House() {
                 {roomTasks(selected.id).length === 0 && <p className="text-sm text-muted-foreground">No rituals for this room yet.</p>}
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
                   {[...roomTasks(selected.id)].sort((a, b) => when(a).localeCompare(when(b))).map((t) => (
-                    <RitualTile key={t.id} task={t} onEdit={(task) => setTaskDlg({ task })} onTend={tend} />
+                    <RitualTile key={t.id} task={t} onTend={tend} />
                   ))}
                 </div>
               </section>
@@ -224,7 +224,7 @@ export default function House() {
           onClose={() => setRoomDlg(undefined)}
         />
       )}
-      {taskDlg && <TaskDialog task={taskDlg.task} defaults={taskDlg.defaults} onClose={() => setTaskDlg(undefined)} />}
+      {taskDlg && <TaskDialog defaults={taskDlg.defaults} onClose={() => setTaskDlg(undefined)} />}
       {itemDlg && <ItemDialog item={itemDlg.item} defaults={itemDlg.defaults} onClose={() => setItemDlg(undefined)} />}
     </div>
   );
