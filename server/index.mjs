@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "..", "data");
 const FILE = path.join(DATA_DIR, "state.json");
-const PASSWORD = process.env.HOME_OS_PASSWORD || ""; // optional: protects the whole app (HTTP Basic)
+const PASSWORD = process.env.MAHA_PASSWORD || process.env.HOME_OS_PASSWORD || ""; // optional: protects the whole app (HTTP Basic)
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 

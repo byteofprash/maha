@@ -1,0 +1,25 @@
+# Hetzner: lives in ~/maha/ next to the shared ~/infra stack (traefik + cloudflared on the "proxy" network).
+# No published ports: Traefik routes maha.byteofprash.com -> this container's port 3000.
+services:
+  maha:
+    build: .
+    image: maha
+    container_name: maha
+    restart: unless-stopped
+    environment:
+      - MAHA_PASSWORD=${MAHA_PASSWORD:-}
+    volumes:
+      - maha-data:/app/data   # SQLite DB + backups
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.maha.rule=Host(`maha.byteofprash.com`)
+      - traefik.http.routers.maha.entrypoints=web
+      - traefik.http.services.maha.loadbalancer.server.port=3000
+
+volumes:
+  maha-data:
+
+networks:
+  proxy:
+    external: true

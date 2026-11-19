@@ -10,7 +10,7 @@ Stack: Vite + React + TypeScript + Tailwind + shadcn/ui (hand-written components
 
 ## Env
 - `PORT` (default 3000), `DATA_DIR` (default ./data — `maha.db` and `backups/` live here; **mount a persistent volume on it**)
-- `HOME_OS_PASSWORD` optional; enables HTTP Basic (any username) + `?token=` on the calendar feed
+- `MAHA_PASSWORD` optional (old name `HOME_OS_PASSWORD` still works); enables HTTP Basic (any username) + `?token=` on the calendar feed
 - `EPHEMERAL_STORAGE=1` shows the "storage not durable" banner (only for hosts without a volume)
 
 ## Storage
@@ -26,7 +26,7 @@ On first start an existing `state.json` is imported and renamed to `state.json.m
 - `GET /api/audit?limit=`
 
 ## MCP server (agent access)
-Streamable HTTP, stateless, at `POST /mcp` on the same port. It uses the same auth as the app: with `HOME_OS_PASSWORD` set, send
+Streamable HTTP, stateless, at `POST /mcp` on the same port. It uses the same auth as the app: with `MAHA_PASSWORD` set, send
 `Authorization: Bearer <password>` (Basic also works). All writes are audited with actor `agent`.
 
 Tools: `get_overview`, `search_items`, `get_item`, `search_tasks` (read); `add_item`, `update_item`, `add_task`, `update_task`,
@@ -39,10 +39,20 @@ Connect from Claude Code (once the app is reachable over HTTPS):
 
 For claude.ai custom connectors, which expect OAuth rather than a static token, see "Ideas / next".
 
-## Deploy (Hetzner, Docker)
-    docker build -t maha .
-    docker run -d --name maha -p 3000:3000 -v maha-data:/app/data -e HOME_OS_PASSWORD=... maha
-Back up by copying `backups/*.db` (or the named volume) off the box.
+## Deploy (Hetzner: Traefik + Cloudflare Tunnel)
+Served at `https://maha.byteofprash.com` (change the Host rule in `docker-compose.yml` for another subdomain). On the server:
+
+    git clone <repo> ~/maha && cd ~/maha
+    echo 'MAHA_PASSWORD=<choose one>' > .env      # needed for the MCP endpoint and the calendar feed token
+    docker compose up -d --build
+
+Then in Cloudflare Zero Trust: add a tunnel route `maha` / `byteofprash.com` -> HTTP `traefik:80`, and an Access application
+for `maha.byteofprash.com` with an Allow policy for your email. Verify with `docker logs traefik` (router `maha@docker`).
+
+Access will also gate `/mcp` and `/api/tasks.ics`, which non-browser clients can't pass. Add a second Access application for
+path `maha.byteofprash.com/mcp` (and `/api/tasks.ics`) with a Bypass policy; those paths are protected by `MAHA_PASSWORD` instead.
+
+Update: `git pull && docker compose up -d --build`. The data lives in the `maha-data` volume; copy `backups/*.db` off the box.
 
 ## Ideas / next
 - OAuth for the MCP endpoint (needed for claude.ai custom connectors); in-app chat panel on the same tools
