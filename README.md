@@ -57,13 +57,13 @@ path `maha.byteofprash.com/mcp` (and `/api/tasks.ics`) with a Bypass policy; tho
 ## Auto-deploy (GitHub Actions)
 `.github/workflows/deploy.yml` runs on every push to `main` (and by hand from the Actions tab): typecheck + build, rsync the code to
 `~/maha` on the server over SSH, write `.env` from secrets, `docker compose up -d --build`, then wait for `/api/health`.
-Add these repo secrets (Settings > Secrets and variables > Actions):
+Add these repo secrets (Settings > Secrets and variables > Actions). The app's own password is *not* a GitHub secret: the first
+deploy generates `~/maha/.env` on the server (`cat ~/maha/.env` to read `MAHA_PASSWORD`, which is also the MCP bearer token).
 
 | Secret | Value |
 |---|---|
 | `HETZNER_HOST`, `HETZNER_USER`, optional `HETZNER_PORT` | same as the ey430 repo |
 | `HETZNER_SSH_KEY`, optional `HETZNER_SSH_PASSPHRASE` | dedicated deploy private key; its public half is in the server's `~/.ssh/authorized_keys` |
-| `MAHA_PASSWORD` | the app password (also the MCP bearer token) |
 
 Requires SSH to be reachable from GitHub runners. The data lives in the `maha-data` volume and is never touched by a deploy;
 copy `backups/*.db` off the box.
