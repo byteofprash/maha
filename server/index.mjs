@@ -124,7 +124,7 @@ const nextDay = (d) => {
 app.get("/api/tasks.ics", (_req, res) => {
   const s = read() || { tasks: [], rooms: [], items: [] };
   const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
-  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MAHA//EN", "CALSCALE:GREGORIAN", "X-WR-CALNAME:MAHA tasks"];
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MAHA//EN", "CALSCALE:GREGORIAN", "X-WR-CALNAME:MAHA rituals"];
   for (const t of s.tasks) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(t.dueDate || "")) continue;
     const room = s.rooms.find((r) => r.id === t.roomId);
@@ -135,7 +135,7 @@ app.get("/api/tasks.ics", (_req, res) => {
       `DTSTAMP:${stamp}`,
       `DTSTART;VALUE=DATE:${compact(t.dueDate)}`,
       `DTEND;VALUE=DATE:${nextDay(t.dueDate)}`,
-      `SUMMARY:${ics("🏠 " + t.title)}`,
+      `SUMMARY:${ics("🌿 " + t.title)}`,
       ...(desc ? [`DESCRIPTION:${ics(desc)}`] : []),
       "END:VEVENT"
     );

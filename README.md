@@ -1,6 +1,7 @@
 # MAHA — Master your Aham
 
-Digital-twin-style home maintenance tracker: recurring tasks, purchase/model inventory, and a spatial house view.
+A home-care tracker built around caring for the things you live with: **rituals** (recurring acts of care, each with a plant that
+thrives while you tend to it), a purchase/model inventory grouped by room, and a spatial house view.
 Stack: Vite + React + TypeScript + Tailwind + shadcn/ui (hand-written components in `src/components/ui`), Express server with SQLite persistence (built-in `node:sqlite`, Node >= 22.13).
 
 ## Run

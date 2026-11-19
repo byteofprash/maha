@@ -211,7 +211,7 @@ export default function Inventory() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1.5">
-                          {nTasks > 0 && <span className="text-xs text-muted-foreground" title="Care routines">{nTasks}</span>}
+                          {nTasks > 0 && <span className="text-xs text-muted-foreground" title="Rituals">{nTasks}</span>}
                           <Button
                             variant="ghost"
                             size="icon"

@@ -175,10 +175,10 @@ export default function House() {
               </section>
               <section className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold">Tasks</h3>
+                  <h3 className="text-sm font-semibold">Rituals</h3>
                   <Button size="sm" variant="outline" onClick={() => setTaskDlg({ defaults: { roomId: selected.id } })}><Plus /> Add</Button>
                 </div>
-                {roomTasks(selected.id).length === 0 && <p className="text-sm text-muted-foreground">No tasks for this room.</p>}
+                {roomTasks(selected.id).length === 0 && <p className="text-sm text-muted-foreground">No rituals for this room yet.</p>}
                 {roomTasks(selected.id).sort((a, b) => a.dueDate.localeCompare(b.dueDate)).map((t) => (
                   <TaskRow key={t.id} task={t} compact onEdit={(task) => setTaskDlg({ task })} />
                 ))}

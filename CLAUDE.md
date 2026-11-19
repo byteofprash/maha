@@ -10,7 +10,18 @@ therapeutic**. Looking after things is an act of care, not a chore list.
   "Create maintenance ticket".
 - Prompts are small and gentle: suggestions as chips first, free text second, sensible defaults, no walls of fields.
 - Colour: soft, calm accents (rose for care); avoid alarm-red unless something is truly overdue.
-- Data model still says `Task`; the user-facing language is "care routine" / "care".
+- Language: a recurring act of care is a **ritual** (never "task", "chore" or "overdue"). Completing one is **"Tended to it"**. A late
+  one is "Waiting for you · 3 days". The data model, API and MCP tool names still say `Task` (kept stable); only the wording changed.
+
+## Rituals and their plants
+Every ritual grows its own flowering plant (`Task.plant`, 6 species in `src/lib/plants.ts`: daisy, tulip, sunflower, lavender,
+cosmos, succulent). New rituals get the least-used species (random among ties) so neighbours never look alike; the server does the
+same for rituals created by the MCP agent. The ritual dialog can shuffle it.
+- How alive it looks = `vitality()` in `src/lib/dates.ts`: 1 just tended, 0 on the due day, floored at -0.4 (never "dead", the
+  worst state is "Waiting for you"). Stages: thriving > content > thirsty > waiting. Colour drains, leaves sag, the stem bends and
+  the flower bows and closes. Drawn in `src/components/plant.tsx` (SVG + CSS, no libraries, respects reduced-motion).
+- "Tended to it" waters the plant (droplets + glow) and the tile keeps its place for ~2.5s before moving to a calmer section.
+- Logic checks: `npm run check` (icon rules + `scripts/check-rituals.ts`), also run by the deploy workflow.
 
 ## Small decision models
 Small, repeatable judgements (like "which icon for this product?") are **deterministic rule tables with an explanation and a

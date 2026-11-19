@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { Cloud, CloudOff, Database, Home, LayoutDashboard, ListChecks, Loader2, Package } from "lucide-react";
+import { Cloud, CloudOff, Database, Flower2, Home, LayoutDashboard, Loader2, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataDialog } from "@/components/dialogs";
 import Dashboard from "@/views/Dashboard";
-import Tasks from "@/views/Tasks";
+import Rituals from "@/views/Rituals";
 import Inventory from "@/views/Inventory";
 import House from "@/views/House";
 import { useStore } from "@/lib/store";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { id: "dashboard", label: "Today", icon: LayoutDashboard },
-  { id: "tasks", label: "Tasks", icon: ListChecks },
+  { id: "tasks", label: "Rituals", icon: Flower2 },
   { id: "inventory", label: "Inventory", icon: Package },
   { id: "house", label: "House", icon: Home },
 ] as const;
@@ -66,7 +66,7 @@ export default function App() {
 
       <main className="mx-auto max-w-6xl px-4 py-6 pb-24 sm:pb-6">
         {view === "dashboard" && <Dashboard />}
-        {view === "tasks" && <Tasks />}
+        {view === "tasks" && <Rituals />}
         {view === "inventory" && <Inventory />}
         {view === "house" && <House />}
       </main>

@@ -45,3 +45,29 @@
   * { @apply border-border; }
   body { @apply bg-background text-foreground antialiased; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 }
+
+/* ---- plants (Rituals) ---- */
+.plant-sway {
+  transform-origin: 60px 110px;
+  animation: plant-sway var(--dur, 6s) ease-in-out var(--delay, 0s) infinite alternate;
+}
+@keyframes plant-sway {
+  from { transform: rotate(calc(var(--amp, 1.5deg) * -1)); }
+  to   { transform: rotate(var(--amp, 1.5deg)); }
+}
+.plant-drop { animation: plant-drop 1s ease-in both; }
+@keyframes plant-drop {
+  0%   { transform: translateY(0);    opacity: 0; }
+  15%  { opacity: 1; }
+  100% { transform: translateY(78px); opacity: 0; }
+}
+.plant-glow { transform-origin: 60px 72px; animation: plant-glow 1.6s ease-out both; }
+@keyframes plant-glow {
+  0%   { opacity: 0;   transform: scale(0.7); }
+  35%  { opacity: 0.9; }
+  100% { opacity: 0;   transform: scale(1.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plant-sway, .plant-drop, .plant-glow { animation: none; }
+  .plant-drop { opacity: 0; }
+}

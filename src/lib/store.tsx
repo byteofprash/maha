@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import type { Item, Room, State, Task } from "./types";
 import { seedState, uid } from "./seed";
 import { addInterval, today } from "./dates";
+import { pickPlant } from "./plants";
 
 export type SaveStatus = "loading" | "saved" | "saving" | "error";
 
@@ -29,7 +30,7 @@ const blankItem = (): Item => ({
 });
 const blankTask = (): Task => ({
   id: uid(), title: "", every: 1, unit: "month", dueDate: today(), lastDone: null, roomId: null, itemId: null,
-  category: "Other", notes: "", history: [],
+  category: "Other", notes: "", history: [], plant: "",
 });
 const blankRoom = (): Room => ({ id: uid(), name: "", floor: 0, x: 0, y: 0, w: 3, h: 2, color: "#6366f1" });
 
@@ -125,6 +126,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     saveTask: (t) => {
       const full = { ...blankTask(), ...t } as Task;
+      // a brand-new ritual gets the plant its neighbours have the least of
+      if (!full.plant && !state.tasks.some((x) => x.id === full.id)) full.plant = pickPlant(state.tasks);
       mutate((s) => ({ ...s, tasks: upsert(s.tasks, full) }));
       put("tasks", full);
     },

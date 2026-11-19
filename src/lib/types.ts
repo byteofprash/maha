@@ -40,6 +40,7 @@ export type Task = {
   category: string;
   notes: string;
   history: string[]; // completion dates, newest first
+  plant: string; // which plant grows for this ritual (see lib/plants.ts); "" = not chosen yet
 };
 
 export type State = {

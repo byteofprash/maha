@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   due_date TEXT NOT NULL, last_done TEXT,
   room_id TEXT REFERENCES rooms(id) ON DELETE SET NULL,
   item_id TEXT REFERENCES items(id) ON DELETE SET NULL,
-  category TEXT NOT NULL DEFAULT 'Other', notes TEXT NOT NULL DEFAULT ''
+  category TEXT NOT NULL DEFAULT 'Other', notes TEXT NOT NULL DEFAULT '',
+  plant TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS task_history (
   task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
@@ -46,6 +47,9 @@ CREATE TABLE IF NOT EXISTS audit_log (
   before TEXT, after TEXT
 );
 `;
+
+// Each ritual grows its own plant. Keep in sync with src/lib/plants.ts (unknown keys just fall back in the UI).
+export const PLANT_KEYS = ["daisy", "tulip", "sunflower", "lavender", "cosmos", "succulent"];
 
 // ---- date helpers (mirror src/lib/dates.ts) ---------------------------------
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -100,6 +104,15 @@ export function openDb(dataDir) {
   // In-place migrations for databases created by earlier versions (CREATE TABLE IF NOT EXISTS does not alter them).
   const hasCol = (table, col) => db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === col);
   if (!hasCol("items", "icon")) db.exec("ALTER TABLE items ADD COLUMN icon TEXT NOT NULL DEFAULT ''");
+  if (!hasCol("tasks", "plant")) {
+    db.exec("ALTER TABLE tasks ADD COLUMN plant TEXT NOT NULL DEFAULT ''");
+    // give existing rituals a plant each, round-robin so neighbours differ
+    db.exec("BEGIN");
+    db.prepare("SELECT id FROM tasks ORDER BY rowid").all().forEach((t, n) =>
+      db.prepare("UPDATE tasks SET plant=? WHERE id=?").run(PLANT_KEYS[n % PLANT_KEYS.length], t.id)
+    );
+    db.exec("COMMIT");
+  }
 
   const tx = (fn) => {
     db.exec("BEGIN IMMEDIATE");
@@ -122,7 +135,7 @@ export function openDb(dataDir) {
   });
   const taskOut = (r, history) => ({
     id: r.id, title: r.title, every: r.every, unit: r.unit, dueDate: r.due_date, lastDone: r.last_done,
-    roomId: r.room_id, itemId: r.item_id, category: r.category, notes: r.notes, history,
+    roomId: r.room_id, itemId: r.item_id, category: r.category, notes: r.notes, plant: r.plant, history,
   });
   const historyFor = (id) => q("SELECT done_on FROM task_history WHERE task_id=? ORDER BY done_on DESC, rowid DESC").all(id).map((h) => h.done_on);
 
@@ -202,6 +215,7 @@ export function openDb(dataDir) {
       dueDate: date(t.dueDate, "dueDate"), lastDone: date(t.lastDone, "lastDone", { nullable: true }),
       roomId: t.roomId ?? null, itemId: t.itemId ?? null,
       category: str(t.category ?? "Other", "category"), notes: str(t.notes, "notes"),
+      plant: slug(t.plant, "plant"),
     };
   };
 
@@ -217,11 +231,21 @@ export function openDb(dataDir) {
          model=excluded.model,serial=excluded.serial,purchase_date=excluded.purchase_date,store=excluded.store,price=excluded.price,
          warranty_months=excluded.warranty_months,manual_url=excluded.manual_url,notes=excluded.notes,icon=excluded.icon`)
       .run(i.id, i.name, i.category, i.roomId, i.brand, i.model, i.serial, i.purchaseDate, i.store, i.price, i.warrantyMonths, i.manualUrl, i.notes, i.icon);
+  /** The least-used plant so far (random among ties), so every new ritual looks different from its neighbours. */
+  const pickPlant = () => {
+    const used = new Map(PLANT_KEYS.map((k) => [k, 0]));
+    for (const r of q("SELECT plant FROM tasks").all()) if (used.has(r.plant)) used.set(r.plant, used.get(r.plant) + 1);
+    const min = Math.min(...used.values());
+    const pool = PLANT_KEYS.filter((k) => used.get(k) === min);
+    return pool[Math.floor(Math.random() * pool.length)];
+  };
   const insertTask = (t, history) => {
-    q(`INSERT INTO tasks (id,title,every,unit,due_date,last_done,room_id,item_id,category,notes) VALUES (?,?,?,?,?,?,?,?,?,?)
+    const plant = t.plant || q("SELECT plant FROM tasks WHERE id=?").get(t.id)?.plant || pickPlant();
+    q(`INSERT INTO tasks (id,title,every,unit,due_date,last_done,room_id,item_id,category,notes,plant) VALUES (?,?,?,?,?,?,?,?,?,?,?)
        ON CONFLICT(id) DO UPDATE SET title=excluded.title,every=excluded.every,unit=excluded.unit,due_date=excluded.due_date,
-         last_done=excluded.last_done,room_id=excluded.room_id,item_id=excluded.item_id,category=excluded.category,notes=excluded.notes`)
-      .run(t.id, t.title, t.every, t.unit, t.dueDate, t.lastDone, t.roomId, t.itemId, t.category, t.notes);
+         last_done=excluded.last_done,room_id=excluded.room_id,item_id=excluded.item_id,category=excluded.category,notes=excluded.notes,
+         plant=excluded.plant`)
+      .run(t.id, t.title, t.every, t.unit, t.dueDate, t.lastDone, t.roomId, t.itemId, t.category, t.notes, plant);
     if (history) {
       q("DELETE FROM task_history WHERE task_id=?").run(t.id);
       for (const h of history) q("INSERT INTO task_history (task_id, done_on) VALUES (?,?)").run(t.id, h);

@@ -209,7 +209,7 @@ export function CareDialog({ item, onClose }: { item: Item; onClose: () => void 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Not now</Button>
           <Button disabled={!kind.trim() || !firstDue} onClick={save}>
-            <HandHeart /> Add to my care routine
+            <HandHeart /> Add this ritual
           </Button>
         </DialogFooter>
       </DialogContent>

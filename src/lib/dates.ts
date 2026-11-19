@@ -1,4 +1,5 @@
 import type { Task, Unit } from "./types";
+import { VITALITY_FLOOR } from "./plants";
 
 export const iso = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -35,6 +36,16 @@ export function intervalLabel(every: number, unit: Unit): string {
   return `Every ${every} ${unit}s`;
 }
 
+/**
+ * How far through its interval a ritual is: 1 right after it was tended to, 0 on its due day, below 0 once it is waiting.
+ * Drives how fresh or droopy its plant looks.
+ */
+export function vitality(t: Task, now = today()): number {
+  const start = t.lastDone && diffDays(t.dueDate, t.lastDone) > 0 ? t.lastDone : addInterval(t.dueDate, -t.every, t.unit);
+  const total = Math.max(1, diffDays(t.dueDate, start));
+  return Math.max(VITALITY_FLOOR, Math.min(1, 1 - diffDays(now, start) / total));
+}
+
 export type DueStatus = "overdue" | "today" | "soon" | "later";
 
 export function dueStatus(t: Task, now = today()): DueStatus {
@@ -49,8 +60,8 @@ export function dueLabel(dueDate: string, now = today()): string {
   const d = diffDays(dueDate, now);
   if (d === 0) return "Today";
   if (d === 1) return "Tomorrow";
-  if (d === -1) return "Yesterday";
-  if (d < 0) return `${-d} days overdue`;
+  if (d === -1) return "Waiting since yesterday";
+  if (d < 0) return `Waiting ${-d} days`;
   if (d <= 14) return `In ${d} days`;
   return parse(dueDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: d > 300 ? "numeric" : undefined });
 }

@@ -25,8 +25,8 @@ function build(store) {
     { name: "maha", version: "0.1.0" },
     {
       instructions:
-        "MAHA is a household maintenance tracker: rooms, an inventory of items (appliances, tools, etc. with purchase/warranty info) " +
-        "and recurring maintenance tasks. Refer to rooms by name. Prefer searching before creating to avoid duplicates. " +
+        "MAHA is a household care tracker: rooms, an inventory of items (appliances, tools, etc. with purchase/warranty info) " +
+        "and rituals (recurring acts of care, called tasks in the tool names). Each ritual has a plant that thrives while it is tended; completing a ritual is 'tending to it'. Refer to rooms by name. Prefer searching before creating to avoid duplicates. " +
         "Dates are yyyy-mm-dd. Deleting is irreversible through this interface: always ask the user first and only pass confirm=true after they agree.",
     }
   );
@@ -257,7 +257,7 @@ function build(store) {
   });
 
   server.registerTool("add_task", {
-    description: "Create a recurring maintenance task (e.g. every 3 months).",
+    description: "Create a ritual: a recurring act of care (e.g. every 3 months). It is given a plant automatically.",
     inputSchema: { title: z.string().min(1), ...taskFields },
     annotations: W,
   }, run((a) => {
@@ -281,7 +281,7 @@ function build(store) {
   }));
 
   server.registerTool("complete_task", {
-    description: "Mark a task done (default today). Records it in the history and schedules the next due date from the interval.",
+    description: "Mark a ritual as tended to (default today). Records it in the history and schedules the next one from the interval.",
     inputSchema: { id: z.string(), date: date.optional().describe("completion date, default today") },
     annotations: W,
   }, run(({ id, date: on }) => {

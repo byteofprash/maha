@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle, CalendarClock, ListChecks, Package, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CalendarClock, Flower2, Package, ShieldAlert } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TaskRow } from "@/components/task-row";
@@ -44,9 +44,9 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat icon={AlertTriangle} label="Overdue" value={overdue.length} tone={overdue.length ? "text-destructive" : ""} />
+        <Stat icon={AlertTriangle} label="Waiting for you" value={overdue.length} tone={overdue.length ? "text-amber-600" : ""} />
         <Stat icon={CalendarClock} label="Due in the next 7 days" value={thisWeek.length} />
-        <Stat icon={ListChecks} label="Recurring tasks" value={state.tasks.length} />
+        <Stat icon={Flower2} label="Rituals" value={state.tasks.length} />
         <Stat icon={Package} label="Items tracked" value={state.items.length} />
       </div>
 
@@ -54,10 +54,10 @@ export default function Dashboard() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Needs attention</CardTitle>
-            <CardDescription>Overdue and due within a week. Tick the circle when it's done.</CardDescription>
+            <CardDescription>Waiting for you, or coming up within a week. Tap the little hand once you've tended to it.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {attention.length === 0 && <p className="text-sm text-muted-foreground">Nothing due this week. 🎉</p>}
+            {attention.length === 0 && <p className="text-sm text-muted-foreground">Nothing waiting this week. 🌿</p>}
             {attention.map((t) => <TaskRow key={t.id} task={t} onEdit={setTask} />)}
           </CardContent>
         </Card>

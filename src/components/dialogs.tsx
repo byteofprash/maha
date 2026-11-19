@@ -1,11 +1,13 @@
 import { useRef, useState, type ReactNode } from "react";
-import { Copy, Download, Upload, Trash2 } from "lucide-react";
+import { Copy, Download, Upload, Trash2, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useStore } from "@/lib/store";
 import { uid } from "@/lib/seed";
 import { IconPicker } from "@/lib/item-icons";
+import { Plant } from "@/components/plant";
+import { PLANT_LABEL, pickPlant, plantFor } from "@/lib/plants";
 import { fmtDate, today } from "@/lib/dates";
 import { ITEM_CATEGORIES, ROOM_COLORS, TASK_CATEGORIES, type Item, type Room, type State, type Task } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -37,23 +39,37 @@ function RoomSelect({ value, onChange }: { value: string | null; onChange: (v: s
 
 export function TaskDialog({ task, defaults, onClose }: { task?: Task; defaults?: Partial<Task>; onClose: () => void }) {
   const { state, saveTask, deleteTask } = useStore();
-  const [f, setF] = useState<Task>(() => ({
-    id: uid(), title: "", every: 1, unit: "month", dueDate: today(), lastDone: null, roomId: null, itemId: null,
-    category: "Other", notes: "", history: [], ...(task ?? defaults),
-  }));
+  const [f, setF] = useState<Task>(() => {
+    const base: Task = {
+      id: uid(), title: "", every: 1, unit: "month", dueDate: today(), lastDone: null, roomId: null, itemId: null,
+      category: "Other", notes: "", history: [], plant: "", ...(task ?? defaults),
+    };
+    if (!task && !base.plant) base.plant = pickPlant(state.tasks); // a new ritual's plant, different from its neighbours
+    return base;
+  });
   const set = <K extends keyof Task>(k: K, v: Task[K]) => setF((p) => ({ ...p, [k]: v }));
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{task ? "Edit task" : "New recurring task"}</DialogTitle>
-          <DialogDescription>When you mark it done, the next due date is counted from that day.</DialogDescription>
+          <DialogTitle>{task ? "Edit ritual" : "New ritual"}</DialogTitle>
+          <DialogDescription>A small act of care that comes round again. When you tend to it, the next one is counted from that day.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
-          <Field label="Title">
+          <Field label="What will you do?">
             <Input autoFocus value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. Descale the kettle" />
           </Field>
+          <div className="flex items-center gap-3 rounded-lg border border-input px-3 py-1.5">
+            <Plant species={plantFor(f)} vitality={1} seed={f.id} className="h-16 w-14 shrink-0" />
+            <div className="min-w-0 flex-1 text-sm">
+              <div className="font-medium">Its plant</div>
+              <div className="text-xs text-muted-foreground">{PLANT_LABEL[plantFor(f)]}: it thrives while you keep tending this.</div>
+            </div>
+            <Button type="button" variant="ghost" size="sm" onClick={() => set("plant", pickPlant(state.tasks.filter((x) => x.id !== f.id), plantFor(f)))}>
+              <Shuffle /> Shuffle
+            </Button>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Repeats every">
               <div className="flex gap-2">

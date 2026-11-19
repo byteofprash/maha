@@ -1,3 +1,4 @@
+import { PLANT_KEYS } from "./plants";
 import type { Item, Room, State, Task } from "./types";
 import { addDays, today } from "./dates";
 
@@ -51,7 +52,7 @@ export function seedState(): State {
   // First due dates are staggered so the dashboard isn't one big wall on day one.
   const task = (title: string, every: number, unit: Task["unit"], offset: number, category: string, extra: Partial<Task> = {}): Task => ({
     id: uid(), title, every, unit, dueDate: addDays(t0, offset), lastDone: null, roomId: null, itemId: null,
-    category, notes: "", history: [], ...extra,
+    category, notes: "", history: [], plant: "", ...extra,
   });
   const tasks: Task[] = [
     task("Water the plants", 1, "week", 0, "Plants", { roomId: rooms.living.id }),
@@ -61,6 +62,7 @@ export function seedState(): State {
     task("Clean the wardrobes", 3, "month", 14, "Cleaning", { roomId: rooms.bedroom.id }),
     task("Wash Veera's bed", 3, "month", 20, "Pets", { itemId: items.veeraBed.id }),
   ];
+  tasks.forEach((t, n) => { t.plant = PLANT_KEYS[n % PLANT_KEYS.length]; }); // neighbours get different plants
 
   return {
     version: 1,

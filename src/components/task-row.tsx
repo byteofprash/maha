@@ -1,4 +1,4 @@
-import { Check, MapPin, Package } from "lucide-react";
+import { HandHeart, MapPin, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useStore } from "@/lib/store";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 export function DueBadge({ task }: { task: Task }) {
   const s = dueStatus(task);
-  const variant = s === "overdue" ? "destructive" : s === "today" ? "warning" : s === "soon" ? "secondary" : "outline";
+  const variant = s === "overdue" ? "warning" : s === "today" ? "warning" : s === "soon" ? "secondary" : "outline";
   return <Badge variant={variant}>{dueLabel(task.dueDate)}</Badge>;
 }
 
@@ -18,8 +18,8 @@ export function TaskRow({ task, onEdit, compact }: { task: Task; onEdit: (t: Tas
   const item = state.items.find((i) => i.id === task.itemId);
   return (
     <div className="flex items-center gap-3 rounded-md border bg-card px-3 py-2.5">
-      <Button size="icon" variant="outline" className="h-8 w-8 shrink-0 rounded-full" title="Mark done today" aria-label={`Mark ${task.title} done`} onClick={() => completeTask(task.id)}>
-        <Check />
+      <Button size="icon" variant="outline" className="h-8 w-8 shrink-0 rounded-full" title="Tended to it" aria-label={`Tended to ${task.title}`} onClick={() => completeTask(task.id)}>
+        <HandHeart className="text-rose-500" />
       </Button>
       <button className="min-w-0 flex-1 text-left" onClick={() => onEdit(task)}>
         <div className={cn("truncate text-sm font-medium")}>{task.title}</div>
