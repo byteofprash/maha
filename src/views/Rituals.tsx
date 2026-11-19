@@ -10,8 +10,8 @@ import { dueStatus } from "@/lib/dates";
 import { TASK_CATEGORIES, type Task } from "@/lib/types";
 
 const GROUPS: { key: ReturnType<typeof dueStatus>[]; title: string }[] = [
-  { key: ["overdue"], title: "Waiting for you" },
-  { key: ["today", "soon"], title: "Coming up this week" },
+  { key: ["overdue", "today"], title: "Waiting for you" }, // due today = its plant already says "Waiting for you"
+  { key: ["soon"], title: "Coming up this week" },
   { key: ["later"], title: "Resting easy" },
 ];
 

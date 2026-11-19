@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plant } from "@/components/plant";
 import { ItemIcon } from "@/lib/item-icons";
 import { useStore } from "@/lib/store";
-import { dueLabel, intervalLabel, vitality } from "@/lib/dates";
+import { intervalLabel, lastTendedLabel, pendingLabel, vitality } from "@/lib/dates";
 import { plantFor, stageOf, STAGE_LABEL, type Stage } from "@/lib/plants";
 import type { Task } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -31,7 +31,6 @@ export function RitualTile({ task, onEdit, onTend }: { task: Task; onEdit: (t: T
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   const item = state.items.find((i) => i.id === task.itemId);
-  const room = state.rooms.find((r) => r.id === (task.roomId ?? item?.roomId));
   const v = vitality(task);
   const stage = stageOf(v);
 
@@ -49,15 +48,15 @@ export function RitualTile({ task, onEdit, onTend }: { task: Task; onEdit: (t: T
         <div className="mt-2 text-sm font-medium leading-snug">{task.title}</div>
         <div className="mt-1 flex max-w-full items-center gap-1.5 text-xs text-muted-foreground">
           {item && <ItemIcon item={item} size="sm" className="!h-5 !w-5 !rounded-md [&_svg]:!size-3" />}
-          <span className="truncate">{[item?.name, room?.name].filter(Boolean).join(" · ") || "Around the house"}</span>
+          <span className="truncate">{[item?.name, intervalLabel(task.every, task.unit)].filter(Boolean).join(" · ")}</span>
         </div>
-        <div className="text-xs text-muted-foreground">{intervalLabel(task.every, task.unit)}</div>
+        <div className="text-xs text-muted-foreground">{lastTendedLabel(task)}</div>
       </button>
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <div className="min-w-0 text-xs leading-tight">
           <div className={cn("font-medium", STAGE_TEXT[stage])}>{STAGE_LABEL[stage]}</div>
-          <div className="truncate text-muted-foreground">{dueLabel(task.dueDate)}</div>
+          <div className="truncate text-muted-foreground">{pendingLabel(task)}</div>
         </div>
         <Button
           size="sm"

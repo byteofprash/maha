@@ -46,6 +46,28 @@ export function vitality(t: Task, now = today()): number {
   return Math.max(VITALITY_FLOOR, Math.min(1, 1 - diffDays(now, start) / total));
 }
 
+const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+
+/** When it was last tended to, in plain words: "today", "yesterday", "7 days ago", or "Not tended yet". */
+export function lastTendedLabel(t: Task, now = today()): string {
+  const last = t.lastDone ?? t.history[0] ?? null;
+  if (!last) return "Not tended yet";
+  const d = diffDays(now, last);
+  if (d <= 0) return "Last tended today";
+  if (d === 1) return "Last tended yesterday";
+  if (d <= 90) return `Last tended ${d} days ago`;
+  return `Last tended ${plural(Math.round(d / 30), "month")} ago`;
+}
+
+/** How long it has been pending, or when it is due: "3 days pending", "Due today", "Due tomorrow", "Due in 5 days". */
+export function pendingLabel(t: Task, now = today()): string {
+  const d = diffDays(t.dueDate, now);
+  if (d < 0) return `${plural(-d, "day")} pending`;
+  if (d === 0) return "Due today";
+  if (d === 1) return "Due tomorrow";
+  return `Due in ${d} days`;
+}
+
 export type DueStatus = "overdue" | "today" | "soon" | "later";
 
 export function dueStatus(t: Task, now = today()): DueStatus {

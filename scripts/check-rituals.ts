@@ -1,4 +1,4 @@
-import { addDays, today, vitality } from "../src/lib/dates";
+import { addDays, lastTendedLabel, pendingLabel, today, vitality } from "../src/lib/dates";
 import { PLANT_KEYS, pickPlant, plantFor, stageOf } from "../src/lib/plants";
 import { daysLeftInWeek, todayBuckets } from "../src/lib/today";
 import type { Task } from "../src/lib/types";
@@ -48,6 +48,17 @@ for (let i = 0; i < PLANT_KEYS.length * 3; i++) {
 }
 check("first six are all different", new Set(made.slice(0, PLANT_KEYS.length).map((m) => m.plant)).size === PLANT_KEYS.length);
 check("shuffle never returns the same plant", Array.from({ length: 50 }, () => pickPlant([], "daisy")).every((p) => p !== "daisy"));
+
+// tile wording: when it was last tended, and how long it has been pending
+const lbl = (last: string | null, due: string, history: string[] = []): Task => ({ ...task(10, "day", last, due), history });
+check("last tended: today / yesterday / N days / never",
+  [lastTendedLabel(lbl(t0, addDays(t0, 10))), lastTendedLabel(lbl(addDays(t0, -1), addDays(t0, 9))), lastTendedLabel(lbl(addDays(t0, -7), addDays(t0, 3))), lastTendedLabel(lbl(null, t0))].join("|")
+  === "Last tended today|Last tended yesterday|Last tended 7 days ago|Not tended yet");
+check("last tended falls back to history", lastTendedLabel(lbl(null, t0, [addDays(t0, -4)])) === "Last tended 4 days ago");
+check("long gaps read in months", lastTendedLabel(lbl(addDays(t0, -200), t0)) === "Last tended 7 months ago", lastTendedLabel(lbl(addDays(t0, -200), t0)));
+check("pending: 3 days / 1 day / due today / tomorrow / in 5 days",
+  [pendingLabel(lbl(null, addDays(t0, -3))), pendingLabel(lbl(null, addDays(t0, -1))), pendingLabel(lbl(null, t0)), pendingLabel(lbl(null, addDays(t0, 1))), pendingLabel(lbl(null, addDays(t0, 5)))].join("|")
+  === "3 days pending|1 day pending|Due today|Due tomorrow|Due in 5 days");
 
 // the Today window: today (+ anything already waiting) and the rest of the week, Monday to Sunday
 check("days left: Mon 6, Thu 3, Sat 1, Sun 0",
