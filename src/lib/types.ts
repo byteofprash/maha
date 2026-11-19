@@ -53,6 +53,7 @@ export type Completion = {
   roomId: string | null;
   roomName: string | null;
   plant: string;
+  notes: string; // the ritual's note as it was when it was tended
   doneOn: string; // yyyy-mm-dd, the day it was tended
   at: string | null; // when it was recorded (ISO); null for entries recovered from old history
   actor: string;

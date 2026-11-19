@@ -144,7 +144,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const roomId = task.roomId ?? item?.roomId ?? null;
       const entry: Completion = {
         id: "c-" + uid(), taskId: id, title: task.title, itemId: item?.id ?? null, itemName: item?.name ?? null,
-        roomId, roomName: state.rooms.find((r) => r.id === roomId)?.name ?? null, plant: task.plant, doneOn: now,
+        roomId, roomName: state.rooms.find((r) => r.id === roomId)?.name ?? null, plant: task.plant, notes: task.notes, doneOn: now,
         at: new Date().toISOString(), actor: "ui",
       };
       mutate((s) => ({

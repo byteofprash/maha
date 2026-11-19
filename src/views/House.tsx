@@ -1,5 +1,5 @@
 import { useRef, useState, type PointerEvent } from "react";
-import { Pencil, Plus, Package, Flower2, Check } from "lucide-react";
+import { Pencil, Plus, Package, Flower2, Check, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,12 +16,18 @@ import { cn } from "@/lib/utils";
 
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
+// Whether the plan is shown is a per-person convenience: remembered in this browser, never required. Closed unless asked for.
+const PLAN_KEY = "aham.house.plan";
+const loadPlanOpen = () => { try { return localStorage.getItem(PLAN_KEY) === "open"; } catch { return false; } };
+const savePlanOpen = (v: boolean) => { try { localStorage.setItem(PLAN_KEY, v ? "open" : "closed"); } catch { /* fine, just not remembered */ } };
+
 type Drag = { id: string; mode: "move" | "resize"; sx: number; sy: number; orig: Room; last: Room };
 
 export default function House() {
   const { state, saveRoom, addFloor } = useStore();
   const [floor, setFloor] = useState(0);
   const [edit, setEdit] = useState(false);
+  const [planOpen, setPlanOpen] = useState(loadPlanOpen);
   const [selId, setSelId] = useState<string | null>(null);
   const [roomDlg, setRoomDlg] = useState<Room | "new">();
   const [taskDlg, setTaskDlg] = useState<{ defaults?: Partial<Task> }>();
@@ -31,6 +37,13 @@ export default function House() {
   const drag = useRef<Drag | null>(null);
   const now = today();
   const { tend, when } = useTend();
+
+  const togglePlan = () => {
+    const next = !planOpen;
+    setPlanOpen(next);
+    savePlanOpen(next);
+    if (!next) setEdit(false); // nothing to edit once the plan is hidden
+  };
 
   const rooms = state.rooms.filter((r) => r.floor === floor);
   const selected = state.rooms.find((r) => r.id === selId) ?? null;
@@ -65,29 +78,73 @@ export default function House() {
   const up = () => { drag.current = null; };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
-      <div className="mx-auto w-full max-w-[26rem] space-y-3 lg:mx-0">
+    <div className="space-y-8">
+      <TendedList completions={state.completions} tasks={state.tasks} />
+
+      <section className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
+          <h2 className="mr-1 text-lg font-semibold tracking-tight">Rooms</h2>
           {state.floors.map((n, i) => (
             <Button key={i} size="sm" variant={i === floor ? "default" : "outline"} onClick={() => { setFloor(i); setSelId(null); }}>{n}</Button>
           ))}
-          {edit && (
-            <form
-              className="flex items-center gap-1"
-              onSubmit={(e) => { e.preventDefault(); if (newFloor.trim()) { addFloor(newFloor.trim()); setNewFloor(""); } }}
-            >
-              <Input className="h-8 w-32" placeholder="New floor…" value={newFloor} onChange={(e) => setNewFloor(e.target.value)} />
-              <Button size="sm" variant="outline" type="submit"><Plus /></Button>
-            </form>
-          )}
-          <div className="ml-auto flex gap-2">
-            {edit && <Button size="sm" variant="outline" onClick={() => setRoomDlg("new")}><Plus /> Room</Button>}
-            <Button size="sm" variant={edit ? "default" : "outline"} onClick={() => setEdit(!edit)}>
-              {edit ? <><Check /> Done</> : <><Pencil /> Edit layout</>}
+          <div className="ml-auto flex flex-wrap gap-2">
+            {planOpen && edit && <Button size="sm" variant="outline" onClick={() => setRoomDlg("new")}><Plus /> Room</Button>}
+            {planOpen && (
+              <Button size="sm" variant={edit ? "default" : "outline"} onClick={() => setEdit(!edit)}>
+                {edit ? <><Check /> Done</> : <><Pencil /> Edit layout</>}
+              </Button>
+            )}
+            <Button size="sm" variant="outline" aria-expanded={planOpen} onClick={togglePlan}>
+              <ChevronRight className={cn("transition-transform", planOpen && "rotate-90")} /> {planOpen ? "Hide the plan" : "Show the plan"}
             </Button>
           </div>
         </div>
 
+        {/* the rooms, as plain buttons: always there, with or without the plan */}
+        <div className="flex flex-wrap gap-2">
+          {rooms.length === 0 && (
+            <p className="text-sm text-muted-foreground">No rooms on this floor yet. Open the plan and use Edit layout to add one.</p>
+          )}
+          {rooms.map((r) => {
+            const its = roomItems(r.id).length;
+            const ts = roomTasks(r.id);
+            const late = ts.filter((t) => diffDays(t.dueDate, now) <= 0).length;
+            return (
+              <button
+                key={r.id}
+                type="button"
+                aria-pressed={selId === r.id}
+                onClick={() => setSelId(selId === r.id ? null : r.id)}
+                className={cn(
+                  "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors hover:bg-accent",
+                  selId === r.id && "border-foreground/40 bg-accent"
+                )}
+              >
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: r.color }} />
+                <span className="font-medium">{r.name}</span>
+                {its > 0 && <span className="flex items-center gap-0.5 text-xs text-muted-foreground"><Package className="h-3 w-3" />{its}</span>}
+                {ts.length > 0 && (
+                  <span className={cn("flex items-center gap-0.5 text-xs", late ? "text-amber-600" : "text-muted-foreground")}>
+                    <Flower2 className="h-3 w-3" />{late ? `${late} waiting` : ts.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className={cn("grid gap-6", planOpen && "lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]")}>
+          {planOpen && (
+            <div className="mx-auto w-full max-w-[26rem] space-y-3 lg:mx-0">
+              {edit && (
+                <form
+                  className="flex items-center gap-1"
+                  onSubmit={(e) => { e.preventDefault(); if (newFloor.trim()) { addFloor(newFloor.trim()); setNewFloor(""); } }}
+                >
+                  <Input className="h-8 w-32" placeholder="New floor…" value={newFloor} onChange={(e) => setNewFloor(e.target.value)} />
+                  <Button size="sm" variant="outline" type="submit"><Plus /></Button>
+                </form>
+              )}
         <div
           ref={canvas}
           className="relative w-full overflow-hidden rounded-lg border bg-card"
@@ -149,9 +206,10 @@ export default function House() {
         <p className="text-xs text-muted-foreground">
           {edit ? "Drag rooms to move, drag the corner to resize, double-click to rename or delete. The plan is a simple grid, 5 tiles wide and 10 long: rough is fine." : "Tap a room to see what lives there and what it needs."}
         </p>
-      </div>
+            </div>
+          )}
 
-      <div className="space-y-4">
+          <div className="space-y-4">
         {selected ? (
           <Card>
             <CardHeader>
@@ -193,15 +251,9 @@ export default function House() {
             </CardContent>
           </Card>
         ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Room details</CardTitle>
-              <CardDescription>Select a room on the plan.</CardDescription>
-            </CardHeader>
-          </Card>
+          <p className="text-sm text-muted-foreground">Pick a room to see what lives there and what it needs.</p>
         )}
 
-        <TendedList completions={state.completions} room={selected ? { id: selected.id, name: selected.name } : null} />
 
         {unplaced.length > 0 && (
           <Card>
@@ -218,7 +270,9 @@ export default function House() {
             </CardContent>
           </Card>
         )}
-      </div>
+          </div>
+        </div>
+      </section>
 
       {roomDlg && (
         <RoomDialog

@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS completions (
   item_id TEXT, item_name TEXT,
   room_id TEXT, room_name TEXT,
   plant TEXT NOT NULL DEFAULT '',
+  notes TEXT NOT NULL DEFAULT '',
   done_on TEXT NOT NULL,
   at TEXT,
   actor TEXT NOT NULL DEFAULT 'ui'
@@ -71,8 +72,8 @@ export const PLANT_KEYS = ["daisy", "tulip", "sunflower", "lavender", "cosmos", 
 
 // Builds log entries from the per-ritual history rows (existing databases, and imports from before the log existed).
 const COMPLETIONS_FROM_HISTORY = `
-  INSERT INTO completions (id, task_id, title, item_id, item_name, room_id, room_name, plant, done_on, at, actor)
-  SELECT 'h-' || h.rowid, t.id, t.title, i.id, i.name, COALESCE(t.room_id, i.room_id), r.name, t.plant, h.done_on, NULL, 'history'
+  INSERT INTO completions (id, task_id, title, item_id, item_name, room_id, room_name, plant, notes, done_on, at, actor)
+  SELECT 'h-' || h.rowid, t.id, t.title, i.id, i.name, COALESCE(t.room_id, i.room_id), r.name, t.plant, t.notes, h.done_on, NULL, 'history'
   FROM task_history h
   JOIN tasks t ON t.id = h.task_id
   LEFT JOIN items i ON i.id = t.item_id
@@ -140,6 +141,11 @@ export function openDb(dataDir) {
     );
     db.exec("COMMIT");
   }
+  // The log remembers the ritual's note too. Existing log tables get the column, filled from the ritual while it still exists.
+  if (!hasCol("completions", "notes")) {
+    db.exec("ALTER TABLE completions ADD COLUMN notes TEXT NOT NULL DEFAULT ''");
+    db.exec("UPDATE completions SET notes = COALESCE((SELECT t.notes FROM tasks t WHERE t.id = completions.task_id), '')");
+  }
   // One-off: copy what the old capped history already knows into the permanent log (dates only; the time is unknown).
   if (!db.prepare("SELECT 1 FROM meta WHERE key='completions_backfilled'").get()) {
     db.exec(COMPLETIONS_FROM_HISTORY);
@@ -171,7 +177,7 @@ export function openDb(dataDir) {
   });
   const completionOut = (r) => ({
     id: r.id, taskId: r.task_id, title: r.title, itemId: r.item_id, itemName: r.item_name, roomId: r.room_id, roomName: r.room_name,
-    plant: r.plant, doneOn: r.done_on, at: r.at, actor: r.actor,
+    plant: r.plant, notes: r.notes, doneOn: r.done_on, at: r.at, actor: r.actor,
   });
   const historyFor = (id) => q("SELECT done_on FROM task_history WHERE task_id=? ORDER BY done_on DESC, rowid DESC").all(id).map((h) => h.done_on);
 
@@ -304,12 +310,12 @@ export function openDb(dataDir) {
     title: str(c.title, "title", { required: true }),
     itemId: c.itemId ? String(c.itemId) : null, itemName: c.itemName ? String(c.itemName) : null,
     roomId: c.roomId ? String(c.roomId) : null, roomName: c.roomName ? String(c.roomName) : null,
-    plant: slug(c.plant, "plant"), doneOn: date(c.doneOn, "doneOn"), at: iso(c.at),
+    plant: slug(c.plant, "plant"), notes: typeof c.notes === "string" ? c.notes.slice(0, 4000) : "", doneOn: date(c.doneOn, "doneOn"), at: iso(c.at),
     actor: typeof c.actor === "string" && c.actor ? c.actor.slice(0, 40) : "ui",
   });
   const insertCompletion = (c) =>
-    q("INSERT OR REPLACE INTO completions (id,task_id,title,item_id,item_name,room_id,room_name,plant,done_on,at,actor) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
-      .run(c.id, c.taskId, c.title, c.itemId, c.itemName, c.roomId, c.roomName, c.plant, c.doneOn, c.at, c.actor);
+    q("INSERT OR REPLACE INTO completions (id,task_id,title,item_id,item_name,room_id,room_name,plant,notes,done_on,at,actor) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+      .run(c.id, c.taskId, c.title, c.itemId, c.itemName, c.roomId, c.roomName, c.plant, c.notes, c.doneOn, c.at, c.actor);
   /** What a ritual belongs to right now, frozen into the log entry. */
   const snapshotOf = (task) => {
     const item = task.itemId ? getItem(task.itemId) : null;
@@ -384,7 +390,7 @@ export function openDb(dataDir) {
       q("UPDATE tasks SET last_done=?, due_date=? WHERE id=?").run(on, addInterval(on, before.every, before.unit), id);
       q("INSERT INTO task_history (task_id, done_on) VALUES (?,?)").run(id, on);
       q("DELETE FROM task_history WHERE task_id=? AND rowid NOT IN (SELECT rowid FROM task_history WHERE task_id=? ORDER BY done_on DESC, rowid DESC LIMIT 30)").run(id, id);
-      insertCompletion(normCompletion({ id: completionId, taskId: id, title: before.title, plant: before.plant, doneOn: on, at: new Date().toISOString(), actor, ...snapshotOf(before) }));
+      insertCompletion(normCompletion({ id: completionId, taskId: id, title: before.title, plant: before.plant, notes: before.notes, doneOn: on, at: new Date().toISOString(), actor, ...snapshotOf(before) }));
       const after = getTask(id);
       audit(actor, "complete", "task", id, before, after);
       return after;

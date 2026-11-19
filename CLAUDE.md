@@ -33,15 +33,20 @@ same for rituals created by the MCP agent. The ritual dialog can shuffle it.
 
 ## The tended log
 Every "Tended to it" is written to a permanent `completions` table (the ritual's name plus the item and room *as they were at that moment*,
-the day it was tended, and an exact timestamp). It has no foreign keys on purpose: entries must still read correctly after a ritual, item
+the ritual's note at that moment, the day it was tended, and an exact timestamp). It has no foreign keys on purpose: entries must still read correctly after a ritual, item
 or room is renamed or deleted. `task_history` is only the capped (30) per-ritual view used by the cards. The log is part of `State`
 (newest first, latest 5000; `GET /api/completions` filters the rest), so export/import carry it; an older backup without it is rebuilt from
 each ritual's history, as is an existing database the first time it starts (dates only, no time). "Reset to sample data" clears it.
-The House page shows it (`src/components/tended-list.tsx`): grouped by day with the time, for the selected room or the whole house.
-Display logic is `src/lib/completions.ts` (tested). The MCP agent reads it with `list_completions`.
+It is the **first thing on the House page** (`src/components/tended-list.tsx`) and deliberately plain: one line per entry, newest first, the
+ritual's name on the left and "Thu, Nov 19 · 4:28 PM" on the right, **no icons or plants**. Tapping a line expands it: the ritual's note
+(its current note if the ritual still exists, otherwise the one saved with the entry), item, room, rhythm, how many times it has been tended,
+and "Open this ritual". It is not tied to a room: it always shows the whole house. Display logic is `src/lib/completions.ts` (tested).
+The MCP agent reads the log with `list_completions`.
 
 ## House page
-The plan is a simple grid, **5 tiles wide and 10 long** (a narrow house): `GRID` in `src/lib/types.ts` and `server/layout.mjs` (keep in
+The House page order is: the tended list, then **Rooms**. Rooms are always available as plain buttons (a room's items and rituals open under them),
+whether or not the plan is shown. **The plan (the map) is optional**: a "Show the plan" / "Hide the plan" toggle, remembered in the browser
+(`aham.house.plan`), **hidden by default**; Edit layout and + Room only exist while it is shown. The plan is a simple grid, **5 tiles wide and 10 long** (a narrow house): `GRID` in `src/lib/types.ts` and `server/layout.mjs` (keep in
 sync). Rooms can't leave it: the UI clamps drags, the API rejects out-of-bounds rooms, and anything imported or already stored
 off the plan is re-fitted (`fitAll`, reading order, shrinking only as needed; once on startup with a safety copy at
 `backups/pre-layout-refit.db`, and on `PUT /api/state`). Selected-room details reuse `ItemIcon` and `RitualTile`. Checks: `npm run check:layout`.

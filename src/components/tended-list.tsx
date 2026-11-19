@@ -1,78 +1,87 @@
-import { useEffect, useState } from "react";
-import { Sprout } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plant } from "@/components/plant";
-import { dayLabel, groupByDay, timeOf, whenLabel } from "@/lib/completions";
-import { shortDate } from "@/lib/dates";
-import { isPlant } from "@/lib/plants";
-import type { Completion } from "@/lib/types";
+import { useRitualDetails } from "@/components/ritual-details";
+import { completedLabel, countsByRitual } from "@/lib/completions";
+import { intervalLabel } from "@/lib/dates";
+import type { Completion, Task } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
-const PAGE = 12;
+const PAGE = 30;
 
 /**
- * Everything that has been tended to, newest first, grouped by the day it happened, with the time.
- * With a room selected it shows that room's history (switchable to the whole house).
+ * Everything that has been tended to, newest first, as plain lines: "Ritual   Thu, Nov 19 · 4:28 PM".
+ * Tapping a line opens it up: the ritual's note and a few details.
  */
-export function TendedList({ completions, room }: { completions: Completion[]; room?: { id: string; name: string } | null }) {
-  const [wholeHouse, setWholeHouse] = useState(false);
+export function TendedList({ completions, tasks }: { completions: Completion[]; tasks: Task[] }) {
+  const { open } = useRitualDetails();
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [shown, setShown] = useState(PAGE);
-  useEffect(() => { setWholeHouse(false); setShown(PAGE); }, [room?.id]);
+  const counts = useMemo(() => countsByRitual(completions), [completions]);
 
-  const scoped = !!room && !wholeHouse;
-  const list = scoped ? completions.filter((c) => c.roomId === room!.id) : completions;
-  const groups = groupByDay(list.slice(0, shown));
+  const toggle = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <CardTitle className="text-base">{scoped ? `Tended in ${room!.name}` : "Tended recently"}</CardTitle>
-            <CardDescription>
-              {list.length === 0 ? "Nothing yet." : `${list.length} ${list.length === 1 ? "time" : "times"} so far, newest first`}
-            </CardDescription>
-          </div>
-          {room && (
-            <div className="flex shrink-0 gap-1">
-              <Button size="sm" variant={scoped ? "secondary" : "ghost"} className="max-w-[8rem] truncate" onClick={() => setWholeHouse(false)}>{room.name}</Button>
-              <Button size="sm" variant={scoped ? "ghost" : "secondary"} onClick={() => setWholeHouse(true)}>Whole house</Button>
-            </div>
-          )}
-        </div>
+        <CardTitle>Tended</CardTitle>
+        <CardDescription>
+          {completions.length === 0 ? "Nothing yet." : `${completions.length} in all, newest first. Tap one to see more.`}
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {list.length === 0 && (
-          <div className="flex flex-col items-center gap-2 py-6 text-center text-sm text-muted-foreground">
-            <Sprout className="h-7 w-7 text-emerald-500/70" />
-            When you tend to a ritual, it is remembered here.
-          </div>
+      <CardContent>
+        {completions.length === 0 && (
+          <p className="py-4 text-sm text-muted-foreground">When you tend to a ritual, it is remembered here.</p>
         )}
-        {groups.map((g) => (
-          <section key={g.date} className="space-y-1">
-            <h3 className="text-xs font-semibold text-muted-foreground">
-              {g.label}
-              {(g.label === "Today" || g.label === "Yesterday") && <span className="font-normal"> · {shortDate(g.date)}</span>}
-            </h3>
-            <ul className="divide-y">
-              {g.items.map((c) => (
-                <li key={c.id} className="flex items-center gap-3 py-1.5" title={`${c.title}: ${whenLabel(c)}`}>
-                  <Plant species={isPlant(c.plant) ? c.plant : "daisy"} vitality={1} seed={c.id} still className="h-10 w-9 shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{c.title}</div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {[c.itemName, scoped ? null : c.roomName].filter(Boolean).join(" · ") || "Around the house"}
-                    </div>
+        <ul className="divide-y">
+          {completions.slice(0, shown).map((c) => {
+            const isOpen = expanded.has(c.id);
+            const live = c.taskId ? tasks.find((t) => t.id === c.taskId) : undefined; // still around? then show its current note
+            const note = (live?.notes ?? c.notes).trim();
+            const times = c.taskId ? counts.get(c.taskId) ?? 1 : 1;
+            return (
+              <li key={c.id}>
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  onClick={() => toggle(c.id)}
+                  className="flex w-full items-baseline gap-3 rounded-md px-1 py-2.5 text-left hover:bg-accent/40"
+                >
+                  <ChevronRight className={cn("h-3.5 w-3.5 shrink-0 translate-y-0.5 text-muted-foreground transition-transform", isOpen && "rotate-90")} />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{c.title}</span>
+                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{completedLabel(c)}</span>
+                </button>
+
+                {isOpen && (
+                  <div className="space-y-3 pb-3 pl-8 pr-1">
+                    {note && <p className="whitespace-pre-wrap rounded-lg bg-muted/50 px-3 py-2.5 text-sm">{note}</p>}
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-5 gap-y-1 text-xs">
+                      {c.itemName && (<><dt className="text-muted-foreground">Looks after</dt><dd>{c.itemName}</dd></>)}
+                      {c.roomName && (<><dt className="text-muted-foreground">Room</dt><dd>{c.roomName}</dd></>)}
+                      {live && (<><dt className="text-muted-foreground">Comes round</dt><dd>{intervalLabel(live.every, live.unit)}</dd></>)}
+                      <dt className="text-muted-foreground">Tended</dt>
+                      <dd>{times} {times === 1 ? "time" : "times"} so far</dd>
+                    </dl>
+                    {live ? (
+                      <Button variant="outline" size="sm" onClick={() => open(live.id)}>Open this ritual</Button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">This ritual has since been removed.</p>
+                    )}
                   </div>
-                  <div className="shrink-0 text-xs tabular-nums text-muted-foreground">{timeOf(c) ?? ""}</div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-        {list.length > shown && (
-          <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => setShown(shown + PAGE)}>
-            Show {Math.min(PAGE, list.length - shown)} more
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        {completions.length > shown && (
+          <Button variant="ghost" size="sm" className="mt-2 w-full text-muted-foreground" onClick={() => setShown(shown + PAGE)}>
+            Show {Math.min(PAGE, completions.length - shown)} more
           </Button>
         )}
       </CardContent>

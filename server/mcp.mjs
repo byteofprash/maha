@@ -189,7 +189,7 @@ function build(store) {
     return {
       total: r.total,
       shown: r.completions.length,
-      completions: r.completions.map((c) => ({ ritual: c.title, ritual_id: c.taskId, item: c.itemName, room: c.roomName, tended_on: c.doneOn, recorded_at: c.at, by: c.actor })),
+      completions: r.completions.map((c) => ({ ritual: c.title, ritual_id: c.taskId, item: c.itemName, room: c.roomName, note: c.notes || undefined, tended_on: c.doneOn, recorded_at: c.at, by: c.actor })),
     };
   }));
 
