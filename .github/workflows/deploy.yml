@@ -37,14 +37,19 @@ jobs:
           SSH_PASSPHRASE: ${{ secrets.HETZNER_SSH_PASSPHRASE }}
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
+          # Accept the key pasted as-is, or as one base64 line (immune to paste/newline mangling).
+          if printf '%s' "$SSH_KEY" | grep -q 'BEGIN'; then
+            printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
+          else
+            printf '%s' "$SSH_KEY" | tr -d ' \r\n' | base64 -d > ~/.ssh/id_deploy
+          fi
           chmod 600 ~/.ssh/id_deploy
           if [ -n "$SSH_PASSPHRASE" ]; then
             ssh-keygen -p -P "$SSH_PASSPHRASE" -N "" -f ~/.ssh/id_deploy >/dev/null \
               || { echo "::error::HETZNER_SSH_PASSPHRASE did not unlock the key."; exit 1; }
           fi
           ssh-keygen -y -P "" -f ~/.ssh/id_deploy > ~/.ssh/id_deploy.pub \
-            || { echo "::error::HETZNER_SSH_KEY is not a valid private key (paste the whole key incl. BEGIN/END lines)."; exit 1; }
+            || { echo "::error::HETZNER_SSH_KEY is not a valid private key (paste the whole key incl. BEGIN/END lines, or its base64 one-liner)."; exit 1; }
           echo "Deploy key (must be in the server's ~/.ssh/authorized_keys):"; ssh-keygen -lf ~/.ssh/id_deploy.pub
           ssh-keyscan -p "$SSH_PORT" "${{ secrets.HETZNER_HOST }}" >> ~/.ssh/known_hosts
           ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o BatchMode=yes -p "$SSH_PORT" "$TARGET" 'echo login ok' \
