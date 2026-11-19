@@ -26,6 +26,12 @@ same for rituals created by the MCP agent. The ritual dialog can shuffle it.
   No stats, warranties or counters there. Window logic is `src/lib/today.ts` (tested). Tending uses the shared `useTend()` hook.
 - Logic checks: `npm run check` (icon rules + `scripts/check-rituals.ts`), also run by the deploy workflow.
 
+## House page
+The plan is a simple grid, **5 tiles wide and 10 long** (a narrow house): `GRID` in `src/lib/types.ts` and `server/layout.mjs` (keep in
+sync). Rooms can't leave it: the UI clamps drags, the API rejects out-of-bounds rooms, and anything imported or already stored
+off the plan is re-fitted (`fitAll`, reading order, shrinking only as needed; once on startup with a safety copy at
+`backups/pre-layout-refit.db`, and on `PUT /api/state`). Selected-room details reuse `ItemIcon` and `RitualTile`. Checks: `npm run check:layout`.
+
 ## Small decision models
 Small, repeatable judgements (like "which icon for this product?") are **deterministic rule tables with an explanation and a
 manual override**, not ad-hoc code or an LLM call: fast, free, testable, and the UI can say why it chose.

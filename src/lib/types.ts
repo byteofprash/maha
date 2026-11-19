@@ -51,7 +51,8 @@ export type State = {
   tasks: Task[];
 };
 
-export const GRID = { cols: 12, rows: 8 };
+// The house plan: 5 tiles wide, 10 long (a narrow house). Keep in sync with GRID in server/layout.mjs.
+export const GRID = { cols: 5, rows: 10 };
 
 export const TASK_CATEGORIES = ["Cleaning", "Plants", "Pets", "Bikes & tools", "Appliances", "Garden", "Safety", "Admin", "Other"];
 export const ITEM_CATEGORIES = ["Appliance", "Electronics", "Smart home", "Furniture", "Tool", "Bike & vehicle", "Garden", "Pet", "Other"];

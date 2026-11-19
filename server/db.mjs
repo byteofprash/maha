@@ -3,6 +3,7 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
+import { GRID, fitAll, fitsOnPlan } from "./layout.mjs";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -173,7 +174,8 @@ export function openDb(dataDir) {
       }
       for (const t of ["task_history", "tasks", "items", "rooms", "floors"]) db.exec(`DELETE FROM ${t}`);
       s.floors.forEach((name, i) => q("INSERT INTO floors (idx, name) VALUES (?,?)").run(i, String(name)));
-      for (const r of s.rooms) insertRoom(normRoom(r));
+      // a backup from before the plan was 5x10 (or a hand-edited file) is re-fitted instead of losing rooms off the edge
+      for (const r of fitAll(s.rooms.map(normRoom))) insertRoom(r);
       const roomIds = new Set(s.rooms.map((r) => r.id));
       const itemIds = new Set(s.items.map((i) => i.id));
       for (const i of s.items) insertItem(normItem({ ...i, roomId: roomIds.has(i.roomId) ? i.roomId : null }));
@@ -257,6 +259,7 @@ export function openDb(dataDir) {
     tx(() => {
       const r = normRoom(body);
       if (r.floor >= q("SELECT COUNT(*) c FROM floors").get().c) bad(`floor ${r.floor} does not exist`);
+      if (!fitsOnPlan(r)) bad(`room must fit on the plan (${GRID.cols} wide x ${GRID.rows} long)`);
       const before = getRoom(r.id);
       insertRoom(r);
       audit(actor, before ? "update" : "create", "room", r.id, before, r);
@@ -337,6 +340,24 @@ export function openDb(dataDir) {
       Math.min(Math.max(Number(limit) || 100, 1), 500)
     );
 
+  /**
+   * One-off migration when the plan shrank (12x8 -> 5x10): re-fit any floor with a room off the plan.
+   * Takes a safety copy first so the old arrangement can be recovered.
+   */
+  const refitLayout = (backupDir) => {
+    const rooms = q("SELECT * FROM rooms ORDER BY rowid").all().map(roomOut);
+    const fixed = fitAll(rooms);
+    const changed = fixed.filter((r, i) => ["x", "y", "w", "h"].some((k) => r[k] !== rooms[i][k]));
+    if (!changed.length) return 0;
+    fs.mkdirSync(backupDir, { recursive: true });
+    backupTo(path.join(backupDir, "pre-layout-refit.db"));
+    tx(() => {
+      for (const r of changed) q("UPDATE rooms SET x=?, y=?, w=?, h=? WHERE id=?").run(r.x, r.y, r.w, r.h, r.id);
+      audit("system", "refit_layout", "room", null, rooms.filter((r) => changed.some((c) => c.id === r.id)), changed);
+    });
+    return changed.length;
+  };
+
   /** Consistent point-in-time copy (safe while the app is running). */
   const backupTo = (file) => {
     fs.rmSync(file, { force: true });
@@ -346,6 +367,6 @@ export function openDb(dataDir) {
   return {
     db, dbPath, isInitialized, getState, replaceState,
     upsertRoom, deleteRoom, upsertItem, deleteItem, upsertTask, deleteTask, completeTask, addFloor,
-    listAudit, backupTo,
+    listAudit, backupTo, refitLayout,
   };
 }

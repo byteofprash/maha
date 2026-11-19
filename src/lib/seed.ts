@@ -14,15 +14,16 @@ export function seedState(): State {
     id: uid(), name, floor, x, y, w, h, color,
   });
   const rooms = {
-    kitchen: room("Kitchen", 0, 0, 4, 3, "#f59e0b"),
-    living: room("Living room", 4, 0, 5, 4, "#6366f1"),
-    hall: room("Hall", 9, 0, 3, 3, "#64748b"),
-    utility: room("Utility / laundry", 0, 3, 3, 2, "#06b6d4"),
-    bath: room("Bathroom", 9, 3, 3, 2, "#10b981"),
-    bedroom: room("Bedroom", 0, 5, 4, 3, "#a855f7"),
-    kid: room("Kid's room", 4, 4, 4, 4, "#ef4444"),
-    storage: room("Garage / storage", 9, 5, 3, 3, "#84cc16"),
-    garden: room("Garden", 0, 0, 8, 5, "#84cc16", 1),
+    // a narrow house: 5 tiles wide, 10 long
+    kitchen: room("Kitchen", 0, 0, 3, 3, "#f59e0b"),
+    hall: room("Hall", 3, 0, 2, 2, "#64748b"),
+    utility: room("Utility / laundry", 3, 2, 2, 2, "#06b6d4"),
+    living: room("Living room", 0, 3, 3, 3, "#6366f1"),
+    bath: room("Bathroom", 3, 4, 2, 2, "#10b981"),
+    bedroom: room("Bedroom", 0, 6, 3, 3, "#a855f7"),
+    kid: room("Kid's room", 3, 6, 2, 3, "#ef4444"),
+    storage: room("Garage / storage", 0, 9, 5, 1, "#84cc16"),
+    garden: room("Garden", 0, 0, 5, 6, "#84cc16", 1),
   };
 
   const item = (name: string, category: string, roomId: string | null, brand = "", model = "", notes = ""): Item => ({

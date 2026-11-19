@@ -1,12 +1,14 @@
 import { useRef, useState, type PointerEvent } from "react";
-import { Pencil, Plus, Package, ListChecks, Check } from "lucide-react";
+import { Pencil, Plus, Package, Flower2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { TaskRow } from "@/components/task-row";
+import { RitualTile } from "@/components/ritual-tile";
 import { ItemDialog, RoomDialog, TaskDialog } from "@/components/dialogs";
+import { ItemIcon } from "@/lib/item-icons";
 import { useStore } from "@/lib/store";
+import { useTend } from "@/lib/use-tend";
 import { diffDays, today } from "@/lib/dates";
 import { GRID, type Item, type Room, type Task } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -27,6 +29,7 @@ export default function House() {
   const canvas = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const now = today();
+  const { tend, when } = useTend();
 
   const rooms = state.rooms.filter((r) => r.floor === floor);
   const selected = state.rooms.find((r) => r.id === selId) ?? null;
@@ -61,8 +64,8 @@ export default function House() {
   const up = () => { drag.current = null; };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className="space-y-3 lg:col-span-2">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+      <div className="mx-auto w-full max-w-[26rem] space-y-3 lg:mx-0">
         <div className="flex flex-wrap items-center gap-2">
           {state.floors.map((n, i) => (
             <Button key={i} size="sm" variant={i === floor ? "default" : "outline"} onClick={() => { setFloor(i); setSelId(null); }}>{n}</Button>
@@ -128,7 +131,7 @@ export default function House() {
                 <div className="mt-1 flex flex-wrap gap-1">
                   {its.length > 0 && <Badge variant="secondary" className="px-1.5 text-[10px]"><Package className="h-3 w-3" />{its.length}</Badge>}
                   {ts.length > 0 && (
-                    <Badge variant={late ? "destructive" : "secondary"} className="px-1.5 text-[10px]"><ListChecks className="h-3 w-3" />{late ? `${late} due` : ts.length}</Badge>
+                    <Badge variant={late ? "warning" : "secondary"} className="px-1.5 text-[10px]"><Flower2 className="h-3 w-3" />{late ? `${late} waiting` : ts.length}</Badge>
                   )}
                 </div>
                 {edit && (
@@ -143,7 +146,7 @@ export default function House() {
           })}
         </div>
         <p className="text-xs text-muted-foreground">
-          {edit ? "Drag rooms to move, drag the corner to resize, double-click to rename or delete. The layout is a simple grid — rough is fine." : "Click a room to see what's in it and what needs doing there."}
+          {edit ? "Drag rooms to move, drag the corner to resize, double-click to rename or delete. The plan is a simple grid, 5 tiles wide and 10 long: rough is fine." : "Tap a room to see what lives there and what it needs."}
         </p>
       </div>
 
@@ -167,8 +170,9 @@ export default function House() {
                 </div>
                 {roomItems(selected.id).length === 0 && <p className="text-sm text-muted-foreground">Nothing placed here yet.</p>}
                 {roomItems(selected.id).map((i) => (
-                  <button key={i.id} onClick={() => setItemDlg({ item: i })} className="flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm hover:bg-accent">
-                    <span className="truncate">{i.name}</span>
+                  <button key={i.id} onClick={() => setItemDlg({ item: i })} className="flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm hover:bg-accent">
+                    <ItemIcon item={i} size="sm" />
+                    <span className="min-w-0 flex-1 truncate">{i.name}</span>
                     <span className="truncate font-mono text-xs text-muted-foreground">{i.model || i.brand}</span>
                   </button>
                 ))}
@@ -179,9 +183,11 @@ export default function House() {
                   <Button size="sm" variant="outline" onClick={() => setTaskDlg({ defaults: { roomId: selected.id } })}><Plus /> Add</Button>
                 </div>
                 {roomTasks(selected.id).length === 0 && <p className="text-sm text-muted-foreground">No rituals for this room yet.</p>}
-                {roomTasks(selected.id).sort((a, b) => a.dueDate.localeCompare(b.dueDate)).map((t) => (
-                  <TaskRow key={t.id} task={t} compact onEdit={(task) => setTaskDlg({ task })} />
-                ))}
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
+                  {[...roomTasks(selected.id)].sort((a, b) => when(a).localeCompare(when(b))).map((t) => (
+                    <RitualTile key={t.id} task={t} onEdit={(task) => setTaskDlg({ task })} onTend={tend} />
+                  ))}
+                </div>
               </section>
             </CardContent>
           </Card>

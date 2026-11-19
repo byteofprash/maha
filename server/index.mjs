@@ -51,6 +51,10 @@ if (!store.isInitialized() && fs.existsSync(FILE)) {
 
 // Daily consistent backup (keeps the last 7) next to the live DB.
 const BACKUP_DIR = path.join(DATA_DIR, "backups");
+if (store.isInitialized()) {
+  const n = store.refitLayout(BACKUP_DIR);
+  if (n) console.log(`Re-fitted ${n} room(s) to the 5x10 plan (safety copy: backups/pre-layout-refit.db)`);
+}
 function backup() {
   try {
     fs.mkdirSync(BACKUP_DIR, { recursive: true });

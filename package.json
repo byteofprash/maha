@@ -9,7 +9,8 @@
     "start": "node server/index.mjs",
     "check:icons": "esbuild scripts/check-icons.ts --bundle --platform=node --format=esm --outfile=.tmp/check-icons.mjs --log-level=error && node .tmp/check-icons.mjs | tail -3",
     "check:rituals": "esbuild scripts/check-rituals.ts --bundle --platform=node --format=esm --outfile=.tmp/check-rituals.mjs --log-level=error && node .tmp/check-rituals.mjs",
-    "check": "npm run check:icons && npm run check:rituals"
+    "check": "npm run check:icons && npm run check:rituals && npm run check:layout",
+    "check:layout": "node scripts/check-layout.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
