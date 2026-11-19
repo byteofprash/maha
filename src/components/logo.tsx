@@ -1,11 +1,10 @@
 import { useId } from "react";
 import { cn } from "@/lib/utils";
 
-// The MAHA mark: a lotus mandala whose heart is a drop of water (the "tending" that waters every plant).
+// The MAHA mark: a lotus mandala with a gold bindu (the still point) at its heart.
 // `full` has the dotted halo (large uses); `small` drops it and draws bolder (header, favicon). Static copies live in /public.
 const OUTER = "M0 0 C -12 -14, -10 -36, 0 -48 C 10 -36, 12 -14, 0 0Z";
 const INNER = "M0 0 C -8 -8, -7 -22, 0 -30 C 7 -22, 8 -8, 0 0Z";
-const DROP = "M0 -13 C 5 -6, 9 -1, 9 4 C 9 9, 5 13, 0 13 C -5 13, -9 9, -9 4 C -9 -1, -5 -6, 0 -13Z";
 
 export function LogoMark({ size = 32, variant = "small", className }: { size?: number; variant?: "full" | "small"; className?: string }) {
   const uid = useId().replace(/:/g, "");
@@ -26,11 +25,9 @@ export function LogoMark({ size = 32, variant = "small", className }: { size?: n
       {Array.from({ length: 8 }, (_, k) => (
         <path key={`i${k}`} d={INNER} transform={`translate(60 60) rotate(${22.5 + k * 45})`} fill={`url(#${deep})`} stroke="#fff" strokeWidth={sw[1]} strokeLinejoin="round" />
       ))}
-      <circle cx={60} cy={60} r={full ? 13 : 15} fill="#fff" />
-      <g transform={`translate(60 60.8) scale(${full ? 1 : 1.12})`}>
-        <path d={DROP} fill={`url(#${gold})`} />
-        {full && <path d="M-4.2 4 C -4.2 0.6, -2.4 -2.2, 0 -4.6" fill="none" stroke="#fff" strokeWidth={1.8} strokeLinecap="round" opacity={0.75} />}
-      </g>
+      {/* the bindu: a gold bead with a white ring and a small highlight */}
+      <circle cx={60} cy={60} r={full ? 8.5 : 11.5} fill={`url(#${gold})`} stroke="#fff" strokeWidth={full ? 1.2 : 2.6} />
+      <circle cx={full ? 57.6 : 57} cy={full ? 57.6 : 57} r={full ? 2.2 : 2.6} fill="#fff4c9" opacity={full ? 0.9 : 0.85} />
     </svg>
   );
 }
