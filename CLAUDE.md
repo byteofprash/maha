@@ -15,5 +15,8 @@ therapeutic**. Looking after things is an act of care, not a chore list.
 ## Working style
 The owner is going through the app page by page, describing changes per page. Do one page at a time.
 
+**Git: work directly on `main`.** Commit and push straight to `main` (the owner's standing instruction): no feature branches,
+no PRs. A push to `main` auto-deploys to Hetzner via GitHub Actions, so test locally (`npm run build`, run the server) before pushing.
+
 ## Stack / ops
 See README.md (SQLite storage, REST + MCP API, Hetzner deploy via GitHub Actions on push to `main`).
