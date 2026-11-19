@@ -40,6 +40,12 @@ manual override**, not ad-hoc code or an LLM call: fast, free, testable, and the
 - When a product is misjudged, fix the rule and add the case to `scripts/check-icons.ts` (`npm run check:icons`, also run by the
   deploy workflow), don't special-case the item.
 
+## Logo
+A lotus mandala (8 outer + 8 inner rose petals) with a gold **drop of water** at its heart: the ritual flower, and the same drop that waters
+every plant. Dotted sage halo on the full version only. `src/components/logo.tsx` (`LogoMark` full/small, `Logo` = mark + wordmark for the
+header); static files in `public/` (`logo.svg` full, `favicon.svg` small, PNGs for tab/iOS/192/512). Alternative concepts kept in `design/logo/`.
+Use the small variant at <= 48px (the halo turns to fuzz). Palette: rose #ffc2d1 > #f4789b, deep rose #e5557f, gold #ffe08a > #f2a93b, sage #86bf8f.
+
 ## Working style
 The owner is going through the app page by page, describing changes per page. Do one page at a time.
 

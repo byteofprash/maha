@@ -1,3 +1,5 @@
+<p align="center"><img src="public/logo.svg" alt="MAHA logo" width="120" /></p>
+
 # MAHA — Master your Aham
 
 A home-care tracker built around caring for the things you live with: **rituals** (recurring acts of care, each with a plant that

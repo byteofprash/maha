@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { DataDialog } from "@/components/dialogs";
 import Today from "@/views/Today";
 import Rituals from "@/views/Rituals";
+import { Logo } from "@/components/logo";
 import Inventory from "@/views/Inventory";
 import House from "@/views/House";
 import { useStore } from "@/lib/store";
@@ -32,11 +33,7 @@ export default function App() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
-          <div className="flex items-baseline gap-2">
-            <span className="text-xl">🏠</span>
-            <span className="text-lg font-bold tracking-[0.2em]">MAHA</span>
-            <span className="hidden text-xs text-muted-foreground md:inline">Master your Aham</span>
-          </div>
+          <Logo />
           <nav className="ml-2 hidden gap-1 sm:flex">
             {NAV.map(({ id, label, icon: Icon }) => (
               <Button key={id} variant={view === id ? "secondary" : "ghost"} size="sm" onClick={() => setView(id)}>
