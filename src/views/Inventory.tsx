@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { Check, Copy, ExternalLink, Plus } from "lucide-react";
+import { Check, Copy, ExternalLink, HandHeart, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
 import { ItemDialog } from "@/components/dialogs";
+import { CareDialog } from "@/components/care-dialog";
 import { useStore } from "@/lib/store";
 import { diffDays, fmtDate, today, warrantyEnd } from "@/lib/dates";
 import { ITEM_CATEGORIES, type Item } from "@/lib/types";
@@ -34,6 +35,7 @@ export default function Inventory() {
   const [cat, setCat] = useState("");
   const [room, setRoom] = useState("");
   const [editing, setEditing] = useState<Item | "new">();
+  const [caring, setCaring] = useState<Item>();
   const now = today();
 
   const rows = useMemo(() => {
@@ -70,7 +72,7 @@ export default function Inventory() {
               <th className="px-4 py-3 font-medium">Model</th>
               <th className="px-4 py-3 font-medium">Bought</th>
               <th className="px-4 py-3 font-medium">Warranty</th>
-              <th className="px-4 py-3 font-medium">Tasks</th>
+              <th className="px-4 py-3 text-right font-medium">Care</th>
             </tr>
           </thead>
           <tbody>
@@ -107,7 +109,21 @@ export default function Inventory() {
                       </Badge>
                     ) : <span className="text-muted-foreground">—</span>}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{nTasks || "—"}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1.5">
+                      {nTasks > 0 && <span className="text-xs text-muted-foreground" title="Care routines">{nTasks}</span>}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full text-rose-500 hover:bg-rose-500/10 hover:text-rose-600"
+                        title="Tend to this"
+                        aria-label={`Add care for ${i.name}`}
+                        onClick={(e) => { e.stopPropagation(); setCaring(i); }}
+                      >
+                        <HandHeart />
+                      </Button>
+                    </div>
+                  </td>
                 </tr>
               );
             })}
@@ -116,6 +132,7 @@ export default function Inventory() {
         {rows.length === 0 && <p className="p-6 text-sm text-muted-foreground">No items match.</p>}
       </Card>
 
+      {caring && <CareDialog item={caring} onClose={() => setCaring(undefined)} />}
       {editing && <ItemDialog item={editing === "new" ? undefined : editing} onClose={() => setEditing(undefined)} />}
     </div>
   );
