@@ -48,8 +48,8 @@ Use the small variant at <= 48px (the halo turns to fuzz). Palette: rose #ffc2d1
 
 ## Naming
 The app is **AHAM**, renamed from MAHA. All user-facing text says AHAM. The **deployment identifiers are still `maha` on purpose**: GitHub
-repo, server folder `~/maha` (workflow `APP`), container / image / compose service / Traefik router, host `maha.byteofprash.com`
-(Cloudflare tunnel + Access), env vars `MAHA_PASSWORD` / `MAHA_DATA_DIR`, `maha.db`, `maha-*.db` backups. Renaming them needs steps
+repo, server folder `~/maha` (workflow `APP`), container / image / compose service / Traefik router, host: the app is served at **`aham.byteofprash.com`**, and the Traefik rule still also answers the old
+`maha.byteofprash.com` until the owner retires it (Cloudflare tunnel + Access are per host), env vars `MAHA_PASSWORD` / `MAHA_DATA_DIR`, `maha.db`, `maha-*.db` backups. Renaming them needs steps
 outside the repo, and a half-rename breaks the deploy (compose requires `MAHA_DATA_DIR`). Don't touch them piecemeal: when the owner asks,
 follow the checklist in README ("Naming").
 

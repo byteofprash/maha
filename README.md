@@ -43,7 +43,8 @@ Connect from Claude Code (once the app is reachable over HTTPS):
 For claude.ai custom connectors, which expect OAuth rather than a static token, see "Ideas / next".
 
 ## Deploy (Hetzner: Traefik + Cloudflare Tunnel)
-Served at `https://maha.byteofprash.com` (change the Host rule in `docker-compose.yml` for another subdomain). On the server:
+Served at `https://aham.byteofprash.com`. The Host rule in `docker-compose.yml` also still answers the old `maha.byteofprash.com`; delete that
+half of the rule (and its Cloudflare route and Access app) once you no longer need it. On the server:
 
 Normally the Action does this (see below). By hand, once:
 
@@ -51,11 +52,11 @@ Normally the Action does this (see below). By hand, once:
     echo 'MAHA_PASSWORD=<choose one>' > .env      # needed for the MCP endpoint and the calendar feed token
     docker compose up -d --build
 
-Then in Cloudflare Zero Trust: add a tunnel route `maha` / `byteofprash.com` -> HTTP `traefik:80`, and an Access application
-for `maha.byteofprash.com` with an Allow policy for your email. Verify with `docker logs traefik` (router `maha@docker`).
+Then in Cloudflare Zero Trust: add a tunnel route `aham` / `byteofprash.com` -> HTTP `traefik:80`, and an Access application
+for `aham.byteofprash.com` with an Allow policy for your email. Verify with `docker logs traefik` (router `maha@docker`, a name only Traefik sees).
 
 Access will also gate `/mcp` and `/api/tasks.ics`, which non-browser clients can't pass. Add a second Access application for
-path `maha.byteofprash.com/mcp` (and `/api/tasks.ics`) with a Bypass policy; those paths are protected by `MAHA_PASSWORD` instead.
+path `aham.byteofprash.com/mcp` (and `/api/tasks.ics`) with a Bypass policy; those paths are protected by `MAHA_PASSWORD` instead.
 
 ## Where the data lives (Hetzner volume)
 `maha.db` and `backups/` live in the folder named by `MAHA_DATA_DIR` in `~/maha/.env` on the server, bind-mounted at `/app/data`.
@@ -83,7 +84,7 @@ copy `backups/*.db` off the box.
 ## Naming
 The app is **AHAM** (Sanskrit *aham*, "I", the self). It was called MAHA; user-facing text now says AHAM, but the **deployment identifiers
 are still `maha` on purpose** (GitHub repo, server folder `~/maha`, container / image / compose service / Traefik router, the host
-`maha.byteofprash.com`, `MAHA_PASSWORD`, `MAHA_DATA_DIR`, `maha.db`), because renaming them needs steps outside the repo. Renaming the
+`maha.byteofprash.com` (still answered alongside the new `aham.byteofprash.com`), `MAHA_PASSWORD`, `MAHA_DATA_DIR`, `maha.db`), because renaming them needs steps outside the repo. Renaming the
 deployment, in this order, so nothing breaks:
 1. Cloudflare: add the tunnel route and Access application for the new host (and the `/mcp`, `/api/tasks.ics` bypass).
 2. Server: stop the app, `mv ~/maha ~/aham`, move the data folder on the volume if you want it renamed, update `~/aham/.env`.
