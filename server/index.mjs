@@ -30,7 +30,7 @@ app.use((req, res, next) => {
   }
   // MCP clients usually send a bearer token instead of Basic auth
   if (scheme === "Bearer" && b64 === PASSWORD) return next();
-  res.set("WWW-Authenticate", 'Basic realm="MAHA"').status(401).send("Authentication required");
+  res.set("WWW-Authenticate", 'Basic realm="AHAM"').status(401).send("Authentication required");
 });
 
 app.use(express.json({ limit: "5mb" }));
@@ -128,14 +128,14 @@ const nextDay = (d) => {
 app.get("/api/tasks.ics", (_req, res) => {
   const s = read() || { tasks: [], rooms: [], items: [] };
   const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
-  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MAHA//EN", "CALSCALE:GREGORIAN", "X-WR-CALNAME:MAHA rituals"];
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//AHAM//EN", "CALSCALE:GREGORIAN", "X-WR-CALNAME:AHAM rituals"];
   for (const t of s.tasks) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(t.dueDate || "")) continue;
     const room = s.rooms.find((r) => r.id === t.roomId);
     const desc = [room && `Room: ${room.name}`, t.notes].filter(Boolean).join("\n");
     lines.push(
       "BEGIN:VEVENT",
-      `UID:${t.id}@maha`,
+      `UID:${t.id}@aham`,
       `DTSTAMP:${stamp}`,
       `DTSTART;VALUE=DATE:${compact(t.dueDate)}`,
       `DTEND;VALUE=DATE:${nextDay(t.dueDate)}`,
@@ -153,4 +153,4 @@ const DIST = path.join(__dirname, "..", "dist");
 app.use(express.static(DIST));
 app.get("*", (_req, res) => res.sendFile(path.join(DIST, "index.html")));
 
-app.listen(PORT, "0.0.0.0", () => console.log(`MAHA listening on ${PORT}, data in ${DATA_DIR}`));
+app.listen(PORT, "0.0.0.0", () => console.log(`AHAM listening on ${PORT}, data in ${DATA_DIR}`));

@@ -1,4 +1,4 @@
-// SQLite storage for MAHA (built-in node:sqlite, no native deps).
+// SQLite storage for AHAM (built-in node:sqlite, no native deps).
 // The UI and, later, the agent both go through the functions exported here.
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";

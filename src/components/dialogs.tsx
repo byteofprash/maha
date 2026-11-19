@@ -262,7 +262,7 @@ export function DataDialog({ onClose, feedPath }: { onClose: () => void; feedPat
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `maha-backup-${today()}.json`;
+    a.download = `aham-backup-${today()}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -274,7 +274,7 @@ export function DataDialog({ onClose, feedPath }: { onClose: () => void; feedPat
       replaceAll(s);
       setMsg(`Imported ${s.items.length} items, ${s.tasks.length} tasks, ${s.rooms.length} rooms.`);
     } catch {
-      setMsg("That file isn't a MAHA backup.");
+      setMsg("That file isn't an AHAM backup.");
     }
   };
 

@@ -1,6 +1,6 @@
-<p align="center"><img src="public/logo.svg" alt="MAHA logo" width="120" /></p>
+<p align="center"><img src="public/logo.svg" alt="AHAM logo" width="120" /></p>
 
-# MAHA — Master your Aham
+# AHAM — The quiet art of tending
 
 A home-care tracker built around caring for the things you live with: **rituals** (recurring acts of care, each with a plant that
 thrives while you tend to it), a purchase/model inventory grouped by room, and a spatial house view (a simple 5-wide by 10-long plan).
@@ -38,7 +38,7 @@ Rooms are referenced by name. Room layout (add/move rooms, floors) is intentiona
 
 Connect from Claude Code (once the app is reachable over HTTPS):
 
-    claude mcp add --transport http maha https://maha.example.com/mcp --header "Authorization: Bearer <password>"
+    claude mcp add --transport http aham https://<your-domain>/mcp --header "Authorization: Bearer <password>"
 
 For claude.ai custom connectors, which expect OAuth rather than a static token, see "Ideas / next".
 
@@ -79,6 +79,17 @@ deploy generates `~/maha/.env` on the server (`cat ~/maha/.env` to read `MAHA_PA
 
 Requires SSH to be reachable from GitHub runners. The data lives on the Hetzner volume at `MAHA_DATA_DIR` (see below) and is never touched by a deploy;
 copy `backups/*.db` off the box.
+
+## Naming
+The app is **AHAM** (Sanskrit *aham*, "I", the self). It was called MAHA; user-facing text now says AHAM, but the **deployment identifiers
+are still `maha` on purpose** (GitHub repo, server folder `~/maha`, container / image / compose service / Traefik router, the host
+`maha.byteofprash.com`, `MAHA_PASSWORD`, `MAHA_DATA_DIR`, `maha.db`), because renaming them needs steps outside the repo. Renaming the
+deployment, in this order, so nothing breaks:
+1. Cloudflare: add the tunnel route and Access application for the new host (and the `/mcp`, `/api/tasks.ics` bypass).
+2. Server: stop the app, `mv ~/maha ~/aham`, move the data folder on the volume if you want it renamed, update `~/aham/.env`.
+3. Repo: rename it on GitHub, then change `APP`, the compose service/container/image/router names and the Host rule to `aham`.
+4. Env vars: accept `AHAM_PASSWORD` / `AHAM_DATA_DIR` next to the old names first, switch the server `.env`, then drop the old names.
+Never rename these piecemeal: the compose file refuses to start without `MAHA_DATA_DIR`.
 
 ## Ideas / next
 - OAuth for the MCP endpoint (needed for claude.ai custom connectors); in-app chat panel on the same tools

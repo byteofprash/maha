@@ -1,7 +1,7 @@
-# MAHA — project notes for Claude
+# AHAM — project notes for Claude
 
 ## The soul of the project (remember this in every design decision)
-MAHA ("Master your Aham") is not a maintenance system, it is a place where **taking care of the things in your home feels
+AHAM (Sanskrit *aham*, "I", the self; tagline "The quiet art of tending") is not a maintenance system, it is a place where **taking care of the things in your home feels
 therapeutic**. Looking after things is an act of care, not a chore list.
 
 - Icons: soulful, not mechanical. Prefer hands, hearts, leaves, sprouts, light (e.g. lucide `HandHeart`, `Sprout`, `Leaf`)
@@ -45,6 +45,13 @@ A lotus mandala (8 outer + 8 inner rose petals) with a gold **bindu**, the still
 the full version only. `src/components/logo.tsx` (`LogoMark` full/small, `Logo` = mark + wordmark for the header); static files in `public/`
 (`logo.svg` full, `favicon.svg` small, PNGs for tab/iOS/192/512). Alternative concepts (incl. the drop-of-water centre) are in `design/logo/`.
 Use the small variant at <= 48px (the halo turns to fuzz). Palette: rose #ffc2d1 > #f4789b, deep rose #e5557f, gold #ffe08a > #f2a93b, sage #86bf8f.
+
+## Naming
+The app is **AHAM**, renamed from MAHA. All user-facing text says AHAM. The **deployment identifiers are still `maha` on purpose**: GitHub
+repo, server folder `~/maha` (workflow `APP`), container / image / compose service / Traefik router, host `maha.byteofprash.com`
+(Cloudflare tunnel + Access), env vars `MAHA_PASSWORD` / `MAHA_DATA_DIR`, `maha.db`, `maha-*.db` backups. Renaming them needs steps
+outside the repo, and a half-rename breaks the deploy (compose requires `MAHA_DATA_DIR`). Don't touch them piecemeal: when the owner asks,
+follow the checklist in README ("Naming").
 
 ## Working style
 The owner is going through the app page by page, describing changes per page. Do one page at a time.

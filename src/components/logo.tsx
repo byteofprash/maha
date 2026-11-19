@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { cn } from "@/lib/utils";
 
-// The MAHA mark: a lotus mandala with a gold bindu (the still point) at its heart.
+// The AHAM mark: a lotus mandala with a gold bindu (the still point) at its heart.
 // `full` has the dotted halo (large uses); `small` drops it and draws bolder (header, favicon). Static copies live in /public.
 const OUTER = "M0 0 C -12 -14, -10 -36, 0 -48 C 10 -36, 12 -14, 0 0Z";
 const INNER = "M0 0 C -8 -8, -7 -22, 0 -30 C 7 -22, 8 -8, 0 0Z";
@@ -12,7 +12,7 @@ export function LogoMark({ size = 32, variant = "small", className }: { size?: n
   const rose = `${uid}-rose`, deep = `${uid}-deep`, gold = `${uid}-gold`;
   const sw = full ? [1.1, 1] : [2.4, 2.2];
   return (
-    <svg viewBox="0 0 120 120" width={size} height={size} className={cn("shrink-0", className)} role="img" aria-label="MAHA">
+    <svg viewBox="0 0 120 120" width={size} height={size} className={cn("shrink-0", className)} role="img" aria-label="AHAM">
       <defs>
         <linearGradient id={rose} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffc2d1" /><stop offset="1" stopColor="#f4789b" /></linearGradient>
         <linearGradient id={deep} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f7a1ba" /><stop offset="1" stopColor="#e5557f" /></linearGradient>
@@ -37,8 +37,8 @@ export function Logo({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
       <LogoMark size={32} />
-      <span className="text-lg font-bold tracking-[0.22em]">MAHA</span>
-      <span className="hidden text-xs text-muted-foreground md:inline">Master your Aham</span>
+      <span className="text-lg font-bold tracking-[0.22em]">AHAM</span>
+      <span className="hidden text-xs text-muted-foreground md:inline">The quiet art of tending</span>
     </div>
   );
 }

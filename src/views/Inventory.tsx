@@ -32,7 +32,7 @@ function CopyModel({ value }: { value: string }) {
 }
 
 const UNPLACED = "none";
-const COLLAPSED_KEY = "maha.inventory.collapsed";
+const COLLAPSED_KEY = "aham.inventory.collapsed";
 
 // Which rooms are folded is a per-person convenience: remembered in this browser, never required.
 function loadCollapsed(): Set<string> {

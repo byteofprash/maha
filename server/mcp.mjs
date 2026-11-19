@@ -1,4 +1,4 @@
-// MCP server for MAHA, mounted at /mcp (Streamable HTTP, stateless).
+// MCP server for AHAM, mounted at /mcp (Streamable HTTP, stateless).
 // Tools call the same store functions as the REST API; every write is audited as actor "agent".
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -22,10 +22,10 @@ const unit = z.enum(["day", "week", "month"]);
 
 function build(store) {
   const server = new McpServer(
-    { name: "maha", version: "0.1.0" },
+    { name: "aham", version: "0.1.0" },
     {
       instructions:
-        "MAHA is a household care tracker: rooms, an inventory of items (appliances, tools, etc. with purchase/warranty info) " +
+        "AHAM is a household care tracker: rooms, an inventory of items (appliances, tools, etc. with purchase/warranty info) " +
         "and rituals (recurring acts of care, called tasks in the tool names). Each ritual has a plant that thrives while it is tended; completing a ritual is 'tending to it'. Refer to rooms by name. Prefer searching before creating to avoid duplicates. " +
         "Dates are yyyy-mm-dd. Deleting is irreversible through this interface: always ask the user first and only pass confirm=true after they agree.",
     }

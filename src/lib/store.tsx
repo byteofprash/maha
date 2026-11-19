@@ -98,7 +98,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const mutate = useCallback((fn: (s: State) => State) => setState((s) => (s ? fn(s) : s)), []);
 
   if (!state) {
-    return <div className="flex h-screen items-center justify-center text-sm text-muted-foreground">Loading MAHA…</div>;
+    return <div className="flex h-screen items-center justify-center text-sm text-muted-foreground">Loading AHAM…</div>;
   }
 
   const upsert = <T extends { id: string }>(list: T[], obj: T) =>
