@@ -201,11 +201,13 @@ export function Plant({ species, vitality, seed = "", tending, className }: Plan
   const headTilt = dir * 74 * thirst; // the stem bends at its neck and the flower bows
   const leafLift = 10 + 35 * alive - 32 * wilt; // leaves: 45 deg up when happy, hanging when waiting
   const open = 0.7 + 0.3 * clamp((v - VITALITY_FLOOR) / (1 - VITALITY_FLOOR), 0, 1); // the bloom closes up a little
-  const sat = 0.5 + 0.5 * clamp((v - VITALITY_FLOOR) / 0.9, 0, 1); // colour drains softly
-  const sepia = 0.32 * wilt;
+  // Colour: a soft fade while thirsty, then everything dries to brown (leaves, stem, bloom) as it keeps waiting.
+  const sepia = clamp(0.18 * thirst + 0.82 * wilt, 0, 1);
+  const sat = 1 - 0.18 * thirst + 1.0 * wilt; // sepia alone goes khaki-grey; pushing the saturation after it gives a warm brown
+  const dim = 1 - 0.34 * wilt;
 
   const style = {
-    filter: `saturate(${sat.toFixed(2)}) sepia(${sepia.toFixed(2)})`,
+    filter: `sepia(${sepia.toFixed(2)}) saturate(${sat.toFixed(2)}) brightness(${dim.toFixed(2)})`,
     transition: `filter ${T}`,
     "--amp": `${(0.5 + 1.3 * alive).toFixed(2)}deg`,
     "--dur": `${5 + (h % 30) / 10}s`,
