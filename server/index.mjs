@@ -17,8 +17,12 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 const app = express();
 
 // ---- optional password gate -------------------------------------------------
+// The brand icons must be fetchable without logging in: iOS downloads the home-screen icon in a separate background request that
+// carries no credentials, so a gated icon silently falls back to a plain letter. They show nothing private.
+const PUBLIC_ICONS = new Set(["/apple-touch-icon.png", "/favicon.svg", "/favicon-32.png", "/icon-192.png", "/icon-512.png", "/logo.svg"]);
 app.use((req, res, next) => {
   if (!PASSWORD) return next();
+  if (PUBLIC_ICONS.has(req.path)) return next();
   // Liveness probe for the deploy check / Docker: returns only {ok:true}, so it is safe to leave open.
   if (req.path === "/api/health") return next();
   // Calendar apps can't send Basic auth, so the .ics feed also accepts ?token=
