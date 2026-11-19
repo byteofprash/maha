@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input, Select } from "@/components/ui/input";
 import { ItemDialog } from "@/components/dialogs";
 import { CareDialog } from "@/components/care-dialog";
+import { ItemIcon } from "@/lib/item-icons";
 import { useStore } from "@/lib/store";
 import { diffDays, fmtDate, today, warrantyEnd } from "@/lib/dates";
 import { ITEM_CATEGORIES, type Item } from "@/lib/types";
@@ -83,8 +84,13 @@ export default function Inventory() {
               return (
                 <tr key={i.id} className="cursor-pointer border-b last:border-0 hover:bg-accent/50" onClick={() => setEditing(i)}>
                   <td className="px-4 py-3">
-                    <div className="font-medium">{i.name}</div>
-                    <div className="text-xs text-muted-foreground">{i.category}</div>
+                    <div className="flex items-center gap-3">
+                      <ItemIcon item={i} />
+                      <div className="min-w-0">
+                        <div className="font-medium">{i.name}</div>
+                        <div className="text-xs text-muted-foreground">{i.category}</div>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-3">{room ? room.name : <span className="text-muted-foreground">Unplaced</span>}</td>
                   <td className="px-4 py-3">{i.brand || <span className="text-muted-foreground">—</span>}</td>

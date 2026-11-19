@@ -5,6 +5,7 @@ import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useStore } from "@/lib/store";
 import { uid } from "@/lib/seed";
+import { IconPicker } from "@/lib/item-icons";
 import { fmtDate, today } from "@/lib/dates";
 import { ITEM_CATEGORIES, ROOM_COLORS, TASK_CATEGORIES, type Item, type Room, type State, type Task } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -125,7 +126,7 @@ export function ItemDialog({ item, defaults, onClose }: { item?: Item; defaults?
   const { saveItem, deleteItem } = useStore();
   const [f, setF] = useState<Item>(() => ({
     id: uid(), name: "", category: "Other", roomId: null, brand: "", model: "", serial: "", purchaseDate: "",
-    store: "", price: null, warrantyMonths: null, manualUrl: "", notes: "", ...(item ?? defaults),
+    store: "", price: null, warrantyMonths: null, manualUrl: "", icon: "", notes: "", ...(item ?? defaults),
   }));
   const set = <K extends keyof Item>(k: K, v: Item[K]) => setF((p) => ({ ...p, [k]: v }));
   const num = (s: string) => (s === "" ? null : Number(s));
@@ -163,6 +164,7 @@ export function ItemDialog({ item, defaults, onClose }: { item?: Item; defaults?
             <Field label="Warranty (months)"><Input type="number" min={0} value={f.warrantyMonths ?? ""} onChange={(e) => set("warrantyMonths", num(e.target.value))} /></Field>
           </div>
           <Field label="Manual / receipt link"><Input value={f.manualUrl} onChange={(e) => set("manualUrl", e.target.value)} placeholder="https://…" /></Field>
+          <Field label="Icon"><IconPicker item={f} onChange={(k) => set("icon", k)} /></Field>
           <Field label="Notes"><Textarea value={f.notes} onChange={(e) => set("notes", e.target.value)} /></Field>
         </div>
         <DialogFooter className="sm:justify-between">

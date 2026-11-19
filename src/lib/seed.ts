@@ -26,7 +26,7 @@ export function seedState(): State {
 
   const item = (name: string, category: string, roomId: string | null, brand = "", model = "", notes = ""): Item => ({
     id: uid(), name, category, roomId, brand, model, serial: "", purchaseDate: "", store: "", price: null,
-    warrantyMonths: null, manualUrl: "", notes,
+    warrantyMonths: null, manualUrl: "", icon: "", notes,
   });
   const NEED = "Add the full model number from the rating plate.";
   const items = {

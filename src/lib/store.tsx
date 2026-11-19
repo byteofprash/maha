@@ -25,7 +25,7 @@ export const useStore = () => useContext(Ctx);
 
 const blankItem = (): Item => ({
   id: uid(), name: "", category: "Other", roomId: null, brand: "", model: "", serial: "", purchaseDate: "",
-  store: "", price: null, warrantyMonths: null, manualUrl: "", notes: "",
+  store: "", price: null, warrantyMonths: null, manualUrl: "", icon: "", notes: "",
 });
 const blankTask = (): Task => ({
   id: uid(), title: "", every: 1, unit: "month", dueDate: today(), lastDone: null, roomId: null, itemId: null,

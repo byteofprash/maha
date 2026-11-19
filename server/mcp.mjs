@@ -183,6 +183,8 @@ function build(store) {
     price: z.number().min(0).nullable().optional(),
     warranty_months: z.number().int().min(0).nullable().optional(),
     manual_url: z.string().optional(), notes: z.string().optional(),
+    icon: z.string().regex(/^[a-z0-9-]{0,30}$/).optional()
+      .describe('optional icon key to override the automatic choice, e.g. "fridge", "vacuum", "drill", "bike", "plant", "paw"; "" restores automatic. Usually leave unset.'),
   };
   const toItem = (s, a) => ({
     ...(a.name !== undefined && { name: a.name }),
@@ -197,6 +199,7 @@ function build(store) {
     ...(a.warranty_months !== undefined && { warrantyMonths: a.warranty_months }),
     ...(a.manual_url !== undefined && { manualUrl: a.manual_url }),
     ...(a.notes !== undefined && { notes: a.notes }),
+    ...(a.icon !== undefined && { icon: a.icon }),
   });
 
   server.registerTool("add_item", {
@@ -207,7 +210,7 @@ function build(store) {
     const s = state();
     const item = store.upsertItem({
       category: "Other", roomId: null, brand: "", model: "", serial: "", purchaseDate: "", store: "",
-      price: null, warrantyMonths: null, manualUrl: "", notes: "", ...toItem(s, a), id: newId(),
+      price: null, warrantyMonths: null, manualUrl: "", notes: "", icon: "", ...toItem(s, a), id: newId(),
     }, ACTOR);
     return enrichItem(state(), item);
   }));

@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS items (
   brand TEXT NOT NULL DEFAULT '', model TEXT NOT NULL DEFAULT '', serial TEXT NOT NULL DEFAULT '',
   purchase_date TEXT NOT NULL DEFAULT '', store TEXT NOT NULL DEFAULT '',
   price REAL, warranty_months INTEGER,
-  manual_url TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT ''
+  manual_url TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '',
+  icon TEXT NOT NULL DEFAULT ''
 );
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY, title TEXT NOT NULL,
@@ -78,6 +79,12 @@ const num = (v, k, { nullable = false, int = false, min } = {}) => {
   if (!Number.isFinite(n) || (int && !Number.isInteger(n)) || (min !== undefined && n < min)) bad(`${k} is invalid`);
   return n;
 };
+/** Short lowercase key such as "fridge"; "" means "choose automatically". Unknown keys are tolerated: the UI falls back. */
+const slug = (v, k) => {
+  if (v === undefined || v === null || v === "") return "";
+  if (typeof v !== "string" || !/^[a-z0-9-]{1,30}$/.test(v)) bad(`${k} must be a short lowercase key like "fridge", or empty for automatic`);
+  return v;
+};
 const date = (v, k, { nullable = false } = {}) => {
   if (v === undefined || v === null || v === "") return nullable ? null : bad(`${k} is required`);
   if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) bad(`${k} must be yyyy-mm-dd`);
@@ -90,6 +97,9 @@ export function openDb(dataDir) {
   const db = new DatabaseSync(dbPath);
   db.exec("PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA synchronous = NORMAL;");
   db.exec(SCHEMA);
+  // In-place migrations for databases created by earlier versions (CREATE TABLE IF NOT EXISTS does not alter them).
+  const hasCol = (table, col) => db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === col);
+  if (!hasCol("items", "icon")) db.exec("ALTER TABLE items ADD COLUMN icon TEXT NOT NULL DEFAULT ''");
 
   const tx = (fn) => {
     db.exec("BEGIN IMMEDIATE");
@@ -108,7 +118,7 @@ export function openDb(dataDir) {
   const itemOut = (r) => ({
     id: r.id, name: r.name, category: r.category, roomId: r.room_id, brand: r.brand, model: r.model, serial: r.serial,
     purchaseDate: r.purchase_date, store: r.store, price: r.price, warrantyMonths: r.warranty_months,
-    manualUrl: r.manual_url, notes: r.notes,
+    manualUrl: r.manual_url, notes: r.notes, icon: r.icon,
   });
   const taskOut = (r, history) => ({
     id: r.id, title: r.title, every: r.every, unit: r.unit, dueDate: r.due_date, lastDone: r.last_done,
@@ -181,6 +191,7 @@ export function openDb(dataDir) {
     price: num(i.price, "price", { nullable: true, min: 0 }),
     warrantyMonths: num(i.warrantyMonths, "warrantyMonths", { nullable: true, int: true, min: 0 }),
     manualUrl: str(i.manualUrl, "manualUrl"), notes: str(i.notes, "notes"),
+    icon: slug(i.icon, "icon"),
   });
   const normTask = (t) => {
     const unit = t.unit ?? "month";
@@ -200,12 +211,12 @@ export function openDb(dataDir) {
        ON CONFLICT(id) DO UPDATE SET name=excluded.name,floor=excluded.floor,x=excluded.x,y=excluded.y,w=excluded.w,h=excluded.h,color=excluded.color`)
       .run(r.id, r.name, r.floor, r.x, r.y, r.w, r.h, r.color);
   const insertItem = (i) =>
-    q(`INSERT INTO items (id,name,category,room_id,brand,model,serial,purchase_date,store,price,warranty_months,manual_url,notes)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+    q(`INSERT INTO items (id,name,category,room_id,brand,model,serial,purchase_date,store,price,warranty_months,manual_url,notes,icon)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
        ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,room_id=excluded.room_id,brand=excluded.brand,
          model=excluded.model,serial=excluded.serial,purchase_date=excluded.purchase_date,store=excluded.store,price=excluded.price,
-         warranty_months=excluded.warranty_months,manual_url=excluded.manual_url,notes=excluded.notes`)
-      .run(i.id, i.name, i.category, i.roomId, i.brand, i.model, i.serial, i.purchaseDate, i.store, i.price, i.warrantyMonths, i.manualUrl, i.notes);
+         warranty_months=excluded.warranty_months,manual_url=excluded.manual_url,notes=excluded.notes,icon=excluded.icon`)
+      .run(i.id, i.name, i.category, i.roomId, i.brand, i.model, i.serial, i.purchaseDate, i.store, i.price, i.warrantyMonths, i.manualUrl, i.notes, i.icon);
   const insertTask = (t, history) => {
     q(`INSERT INTO tasks (id,title,every,unit,due_date,last_done,room_id,item_id,category,notes) VALUES (?,?,?,?,?,?,?,?,?,?)
        ON CONFLICT(id) DO UPDATE SET title=excluded.title,every=excluded.every,unit=excluded.unit,due_date=excluded.due_date,

@@ -12,6 +12,13 @@ therapeutic**. Looking after things is an act of care, not a chore list.
 - Colour: soft, calm accents (rose for care); avoid alarm-red unless something is truly overdue.
 - Data model still says `Task`; the user-facing language is "care routine" / "care".
 
+## Small decision models
+Small, repeatable judgements (like "which icon for this product?") are **deterministic rule tables with an explanation and a
+manual override**, not ad-hoc code or an LLM call: fast, free, testable, and the UI can say why it chose.
+- Item icons: `src/lib/item-icon-rules.ts` (pure; order = override > name > brand/model > category > default; most specific rule
+  first) and `src/lib/item-icons.tsx` (icon + soft tone registry, `ItemIcon`, `IconPicker`). `Item.icon` = "" means automatic.
+- When a product is misjudged, fix the rule (and add the case to the table-driven check), don't special-case the item.
+
 ## Working style
 The owner is going through the app page by page, describing changes per page. Do one page at a time.
 

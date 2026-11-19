@@ -24,6 +24,7 @@ export type Item = {
   price: number | null;
   warrantyMonths: number | null;
   manualUrl: string;
+  icon: string; // "" = chosen automatically from the product (see lib/item-icon-rules.ts)
   notes: string;
 };
 
