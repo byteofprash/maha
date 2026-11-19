@@ -49,7 +49,7 @@ export default function Rituals() {
       </div>
 
       {/* one grid, so a tile keeps its place (and its animation) while the others move around it */}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2.5">
         {GROUPS.flatMap((g) => {
           const rows = filtered.filter((t) => g.key.includes(dueStatus({ ...t, dueDate: when(t) })));
           if (!rows.length) return [];
@@ -57,7 +57,7 @@ export default function Rituals() {
             <h2 key={`h-${g.title}`} className="col-span-full mt-2 text-sm font-semibold text-muted-foreground first:mt-0">
               {g.title} · {rows.length}
             </h2>,
-            ...rows.map((t) => <RitualTile key={t.id} task={t} onEdit={setEditing} onTend={tend} />),
+            ...rows.map((t) => <RitualTile key={t.id} task={t} onEdit={setEditing} onTend={tend} compact />),
           ];
         })}
       </div>
