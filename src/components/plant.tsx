@@ -185,10 +185,12 @@ export type PlantProps = {
   seed?: string;
   /** play the watering animation */
   tending?: boolean;
+  /** no swaying (for many small plants in a list) */
+  still?: boolean;
   className?: string;
 };
 
-export function Plant({ species, vitality, seed = "", tending, className }: PlantProps) {
+export function Plant({ species, vitality, seed = "", tending, still, className }: PlantProps) {
   const sp = SPECIES[species];
   const v = clamp(vitality, VITALITY_FLOOR, 1);
   const alive = clamp(v, 0, 1); // 0 at due day, 1 when fresh
@@ -227,7 +229,7 @@ export function Plant({ species, vitality, seed = "", tending, className }: Plan
 
       {tending && <circle className="plant-glow" cx={60} cy={72} r={54} fill={`url(#glow-${seed})`} />}
 
-      <g className="plant-sway">
+      <g className={still ? undefined : "plant-sway"}>
         <g style={{ transform: `rotate(${lean}deg)`, transformOrigin: `60px ${BASE}px`, transition: `transform ${T}` }}>
           <path d={`M60 ${BASE} L60 ${pivotY}`} stroke={LEAF_DARK} strokeWidth={3} strokeLinecap="round" fill="none" />
           {sp.rosette && <Rosette droop={thirst} />}

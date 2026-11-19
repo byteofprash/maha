@@ -2,6 +2,7 @@
 // The UI and, later, the agent both go through the functions exported here.
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { GRID, fitAll, fitsOnPlan } from "./layout.mjs";
 
@@ -39,6 +40,22 @@ CREATE TABLE IF NOT EXISTS task_history (
   done_on TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_history_task ON task_history(task_id, done_on DESC);
+-- The permanent log of everything ever tended. No foreign keys and name snapshots on purpose: an entry must still read
+-- correctly after its ritual, item or room is renamed or deleted (task_history above is only the capped per-ritual view).
+CREATE TABLE IF NOT EXISTS completions (
+  id TEXT PRIMARY KEY,
+  task_id TEXT,
+  title TEXT NOT NULL,
+  item_id TEXT, item_name TEXT,
+  room_id TEXT, room_name TEXT,
+  plant TEXT NOT NULL DEFAULT '',
+  done_on TEXT NOT NULL,
+  at TEXT,
+  actor TEXT NOT NULL DEFAULT 'ui'
+);
+CREATE INDEX IF NOT EXISTS idx_completions_when ON completions(done_on DESC, at DESC);
+CREATE INDEX IF NOT EXISTS idx_completions_task ON completions(task_id);
+CREATE INDEX IF NOT EXISTS idx_completions_room ON completions(room_id);
 CREATE INDEX IF NOT EXISTS idx_items_room ON items(room_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_due ON tasks(due_date);
 CREATE TABLE IF NOT EXISTS audit_log (
@@ -51,6 +68,15 @@ CREATE TABLE IF NOT EXISTS audit_log (
 
 // Each ritual grows its own plant. Keep in sync with src/lib/plants.ts (unknown keys just fall back in the UI).
 export const PLANT_KEYS = ["daisy", "tulip", "sunflower", "lavender", "cosmos", "succulent"];
+
+// Builds log entries from the per-ritual history rows (existing databases, and imports from before the log existed).
+const COMPLETIONS_FROM_HISTORY = `
+  INSERT INTO completions (id, task_id, title, item_id, item_name, room_id, room_name, plant, done_on, at, actor)
+  SELECT 'h-' || h.rowid, t.id, t.title, i.id, i.name, COALESCE(t.room_id, i.room_id), r.name, t.plant, h.done_on, NULL, 'history'
+  FROM task_history h
+  JOIN tasks t ON t.id = h.task_id
+  LEFT JOIN items i ON i.id = t.item_id
+  LEFT JOIN rooms r ON r.id = COALESCE(t.room_id, i.room_id)`;
 
 // ---- date helpers (mirror src/lib/dates.ts) ---------------------------------
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -114,6 +140,11 @@ export function openDb(dataDir) {
     );
     db.exec("COMMIT");
   }
+  // One-off: copy what the old capped history already knows into the permanent log (dates only; the time is unknown).
+  if (!db.prepare("SELECT 1 FROM meta WHERE key='completions_backfilled'").get()) {
+    db.exec(COMPLETIONS_FROM_HISTORY);
+    db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('completions_backfilled','1')").run();
+  }
 
   const tx = (fn) => {
     db.exec("BEGIN IMMEDIATE");
@@ -137,6 +168,10 @@ export function openDb(dataDir) {
   const taskOut = (r, history) => ({
     id: r.id, title: r.title, every: r.every, unit: r.unit, dueDate: r.due_date, lastDone: r.last_done,
     roomId: r.room_id, itemId: r.item_id, category: r.category, notes: r.notes, plant: r.plant, history,
+  });
+  const completionOut = (r) => ({
+    id: r.id, taskId: r.task_id, title: r.title, itemId: r.item_id, itemName: r.item_name, roomId: r.room_id, roomName: r.room_name,
+    plant: r.plant, doneOn: r.done_on, at: r.at, actor: r.actor,
   });
   const historyFor = (id) => q("SELECT done_on FROM task_history WHERE task_id=? ORDER BY done_on DESC, rowid DESC").all(id).map((h) => h.done_on);
 
@@ -163,6 +198,8 @@ export function openDb(dataDir) {
       rooms: q("SELECT * FROM rooms ORDER BY rowid").all().map(roomOut),
       items: q("SELECT * FROM items ORDER BY rowid").all().map(itemOut),
       tasks: q("SELECT * FROM tasks ORDER BY rowid").all().map((r) => taskOut(r, hist.get(r.id) ?? [])),
+      // newest first; the full log stays in the database, the app is handed the most recent 5000
+      completions: q("SELECT * FROM completions ORDER BY done_on DESC, COALESCE(at, '') DESC, rowid DESC LIMIT 5000").all().map(completionOut),
     };
   };
 
@@ -172,7 +209,7 @@ export function openDb(dataDir) {
       if (!s || !Array.isArray(s.rooms) || !Array.isArray(s.items) || !Array.isArray(s.tasks) || !Array.isArray(s.floors)) {
         bad("invalid state");
       }
-      for (const t of ["task_history", "tasks", "items", "rooms", "floors"]) db.exec(`DELETE FROM ${t}`);
+      for (const t of ["completions", "task_history", "tasks", "items", "rooms", "floors"]) db.exec(`DELETE FROM ${t}`);
       s.floors.forEach((name, i) => q("INSERT INTO floors (idx, name) VALUES (?,?)").run(i, String(name)));
       // a backup from before the plan was 5x10 (or a hand-edited file) is re-fitted instead of losing rooms off the edge
       for (const r of fitAll(s.rooms.map(normRoom))) insertRoom(r);
@@ -185,7 +222,13 @@ export function openDb(dataDir) {
           Array.isArray(t.history) ? t.history.filter((h) => /^\d{4}-\d{2}-\d{2}$/.test(h)) : []
         );
       }
+      if (Array.isArray(s.completions)) {
+        for (const c of s.completions) insertCompletion(normCompletion(c));
+      } else {
+        db.exec(COMPLETIONS_FROM_HISTORY); // an older backup: rebuild the log from each ritual's history
+      }
       q("INSERT OR REPLACE INTO meta (key, value) VALUES ('initialized','1')").run();
+      q("INSERT OR REPLACE INTO meta (key, value) VALUES ('completions_backfilled','1')").run();
       audit(actor, action, "state", null, null, { rooms: s.rooms.length, items: s.items.length, tasks: s.tasks.length });
     });
 
@@ -254,6 +297,26 @@ export function openDb(dataDir) {
     }
   };
 
+  const iso = (v) => (typeof v === "string" && !Number.isNaN(Date.parse(v)) ? new Date(v).toISOString() : null);
+  const normCompletion = (c) => ({
+    id: typeof c.id === "string" && /^[A-Za-z0-9_-]{1,60}$/.test(c.id) ? c.id : "c-" + crypto.randomUUID().replace(/-/g, "").slice(0, 16),
+    taskId: c.taskId ? String(c.taskId) : null,
+    title: str(c.title, "title", { required: true }),
+    itemId: c.itemId ? String(c.itemId) : null, itemName: c.itemName ? String(c.itemName) : null,
+    roomId: c.roomId ? String(c.roomId) : null, roomName: c.roomName ? String(c.roomName) : null,
+    plant: slug(c.plant, "plant"), doneOn: date(c.doneOn, "doneOn"), at: iso(c.at),
+    actor: typeof c.actor === "string" && c.actor ? c.actor.slice(0, 40) : "ui",
+  });
+  const insertCompletion = (c) =>
+    q("INSERT OR REPLACE INTO completions (id,task_id,title,item_id,item_name,room_id,room_name,plant,done_on,at,actor) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+      .run(c.id, c.taskId, c.title, c.itemId, c.itemName, c.roomId, c.roomName, c.plant, c.doneOn, c.at, c.actor);
+  /** What a ritual belongs to right now, frozen into the log entry. */
+  const snapshotOf = (task) => {
+    const item = task.itemId ? getItem(task.itemId) : null;
+    const roomId = task.roomId ?? item?.roomId ?? null;
+    return { itemId: item?.id ?? null, itemName: item?.name ?? null, roomId, roomName: roomId ? getRoom(roomId)?.name ?? null : null };
+  };
+
   // ---- entity API ---------------------------------------------------------------
   const upsertRoom = (body, actor = "ui") =>
     tx(() => {
@@ -313,7 +376,7 @@ export function openDb(dataDir) {
       audit(actor, "delete", "task", id, before, null);
       return true;
     });
-  const completeTask = (id, on = today(), actor = "ui") =>
+  const completeTask = (id, on = today(), actor = "ui", completionId) =>
     tx(() => {
       const before = getTask(id);
       if (!before) return null;
@@ -321,6 +384,7 @@ export function openDb(dataDir) {
       q("UPDATE tasks SET last_done=?, due_date=? WHERE id=?").run(on, addInterval(on, before.every, before.unit), id);
       q("INSERT INTO task_history (task_id, done_on) VALUES (?,?)").run(id, on);
       q("DELETE FROM task_history WHERE task_id=? AND rowid NOT IN (SELECT rowid FROM task_history WHERE task_id=? ORDER BY done_on DESC, rowid DESC LIMIT 30)").run(id, id);
+      insertCompletion(normCompletion({ id: completionId, taskId: id, title: before.title, plant: before.plant, doneOn: on, at: new Date().toISOString(), actor, ...snapshotOf(before) }));
       const after = getTask(id);
       audit(actor, "complete", "task", id, before, after);
       return after;
@@ -334,6 +398,19 @@ export function openDb(dataDir) {
       audit(actor, "create", "floor", String(idx), null, { name });
       return idx;
     });
+
+  /** The log, newest first. Optional filters: a room (by id), a ritual (by id), entries from `since` (yyyy-mm-dd) on. */
+  const listCompletions = ({ roomId, taskId, since, limit = 100 } = {}) => {
+    const where = [], args = [];
+    if (roomId) { where.push("room_id = ?"); args.push(roomId); }
+    if (taskId) { where.push("task_id = ?"); args.push(taskId); }
+    if (since) { where.push("done_on >= ?"); args.push(date(since, "since")); }
+    const w = where.length ? "WHERE " + where.join(" AND ") : "";
+    const total = q(`SELECT COUNT(*) c FROM completions ${w}`).get(...args).c;
+    const rows = q(`SELECT * FROM completions ${w} ORDER BY done_on DESC, COALESCE(at, '') DESC, rowid DESC LIMIT ?`)
+      .all(...args, Math.min(Math.max(Number(limit) || 100, 1), 1000));
+    return { total, completions: rows.map(completionOut) };
+  };
 
   const listAudit = (limit = 100) =>
     q("SELECT id, at, actor, action, entity, entity_id, before, after FROM audit_log ORDER BY id DESC LIMIT ?").all(
@@ -367,6 +444,6 @@ export function openDb(dataDir) {
   return {
     db, dbPath, isInitialized, getState, replaceState,
     upsertRoom, deleteRoom, upsertItem, deleteItem, upsertTask, deleteTask, completeTask, addFloor,
-    listAudit, backupTo, refitLayout,
+    listAudit, backupTo, refitLayout, listCompletions,
   };
 }

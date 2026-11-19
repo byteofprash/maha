@@ -2,6 +2,8 @@ import { addDays, lastTendedLabel, pendingLabel, today, vitality } from "../src/
 import { PLANT_KEYS, pickPlant, plantFor, stageOf } from "../src/lib/plants";
 import { daysLeftInWeek, todayBuckets } from "../src/lib/today";
 import { ritualFacts } from "../src/lib/ritual-facts";
+import { dayLabel, groupByDay, timeOf, whenLabel } from "../src/lib/completions";
+import type { Completion } from "../src/lib/types";
 import type { Task } from "../src/lib/types";
 
 let bad = 0;
@@ -70,6 +72,17 @@ const many = ritualFacts(lbl(t0, addDays(t0, 10), Array.from({ length: 30 }, (_,
 check("facts: shows at most 6 recent dates", many.recent.length === 6 && many.times === 30);
 const brandNew = ritualFacts(lbl(null, addDays(t0, 10)));
 check("facts: a brand-new ritual has no 'last tended'", brandNew.last === null && brandNew.recent.length === 0 && brandNew.times === 0);
+
+// the tended log: grouping by day and the wording of "when"
+const comp = (id: string, doneOn: string, at: string | null): Completion => ({ id, taskId: "t", title: "x", itemId: null, itemName: null, roomId: null, roomName: null, plant: "", doneOn, at, actor: "ui" });
+const noon = (d: string) => new Date(d + "T12:34:00").toISOString(); // local noon-ish, so the local date matches
+check("day labels", dayLabel(t0) === "Today" && dayLabel(addDays(t0, -1)) === "Yesterday" && !["Today", "Yesterday"].includes(dayLabel(addDays(t0, -5))));
+check("time shown only when it matches the day tended", timeOf(comp("a", t0, noon(t0))) === new Date(noon(t0)).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) && timeOf(comp("b", addDays(t0, -3), noon(t0))) === null && timeOf(comp("c", t0, null)) === null);
+check("when: 'Today at <time>' vs date only", whenLabel(comp("a", t0, noon(t0))).startsWith("Today at ") && whenLabel(comp("c", addDays(t0, -1), null)) === "Yesterday");
+const logged = [comp("1", t0, noon(t0)), comp("2", t0, null), comp("3", addDays(t0, -1), null), comp("4", addDays(t0, -9), null)];
+const groups = groupByDay(logged);
+check("grouped by day, newest first", groups.length === 3 && groups[0].items.length === 2 && groups[0].label === "Today" && groups[1].label === "Yesterday", groups.map((g) => g.label + ":" + g.items.length).join(" "));
+check("empty log groups to nothing", groupByDay([]).length === 0);
 
 // the Today window: today (+ anything already waiting) and the rest of the week, Monday to Sunday
 check("days left: Mon 6, Thu 3, Sat 1, Sun 0",

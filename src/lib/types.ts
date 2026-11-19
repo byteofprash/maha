@@ -43,12 +43,28 @@ export type Task = {
   plant: string; // which plant grows for this ritual (see lib/plants.ts); "" = not chosen yet
 };
 
+/** One entry in the permanent log of everything tended to. Names are snapshots, so it reads right after renames and deletions. */
+export type Completion = {
+  id: string;
+  taskId: string | null;
+  title: string;
+  itemId: string | null;
+  itemName: string | null;
+  roomId: string | null;
+  roomName: string | null;
+  plant: string;
+  doneOn: string; // yyyy-mm-dd, the day it was tended
+  at: string | null; // when it was recorded (ISO); null for entries recovered from old history
+  actor: string;
+};
+
 export type State = {
   version: 1;
   floors: string[];
   rooms: Room[];
   items: Item[];
   tasks: Task[];
+  completions: Completion[]; // newest first
 };
 
 // The house plan: 5 tiles wide, 10 long (a narrow house). Keep in sync with GRID in server/layout.mjs.

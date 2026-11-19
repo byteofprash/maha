@@ -111,8 +111,11 @@ app.delete("/api/items/:id", wrap((req, res) => res.json({ ok: store.deleteItem(
 
 app.put("/api/tasks/:id", wrap((req, res) => res.json({ task: store.upsertTask(withId(req), actor(req)) })));
 app.delete("/api/tasks/:id", wrap((req, res) => res.json({ ok: store.deleteTask(req.params.id, actor(req)) })));
+app.get("/api/completions", wrap((req, res) =>
+  res.json(store.listCompletions({ roomId: req.query.room, taskId: req.query.task, since: req.query.since, limit: req.query.limit }))
+));
 app.post("/api/tasks/:id/complete", wrap((req, res) => {
-  const task = store.completeTask(req.params.id, req.body?.date, actor(req));
+  const task = store.completeTask(req.params.id, req.body?.date, actor(req), req.body?.id);
   if (!task) return res.status(404).json({ error: "task not found" });
   res.json({ task });
 }));

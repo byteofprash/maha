@@ -174,6 +174,25 @@ function build(store) {
     return { count: tasks.length, tasks };
   }));
 
+  server.registerTool("list_completions", {
+    description: "The log of everything that has been tended to, newest first, with when it happened. Filter by room, by ritual id, or from a date on.",
+    inputSchema: {
+      room: z.string().optional().describe("room name or id"),
+      ritual_id: z.string().optional(),
+      since: date.optional().describe("only entries on or after this date"),
+      limit: z.number().int().min(1).max(200).optional().describe("default 50"),
+    },
+    annotations: RO,
+  }, run(({ room, ritual_id, since, limit }) => {
+    const s = state();
+    const r = store.listCompletions({ roomId: room ? resolveRoom(s, room) : undefined, taskId: ritual_id, since, limit: limit ?? 50 });
+    return {
+      total: r.total,
+      shown: r.completions.length,
+      completions: r.completions.map((c) => ({ ritual: c.title, ritual_id: c.taskId, item: c.itemName, room: c.roomName, tended_on: c.doneOn, recorded_at: c.at, by: c.actor })),
+    };
+  }));
+
   // ---- write: items ------------------------------------------------------------------
   const itemFields = {
     category: z.string().optional().describe("e.g. Appliance, Electronics, Smart home, Furniture, Tool, Bike & vehicle, Garden, Pet, Other"),

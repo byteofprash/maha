@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import type { Item, Room, State, Task } from "./types";
+import type { Completion, Item, Room, State, Task } from "./types";
 import { seedState, uid } from "./seed";
 import { addInterval, today } from "./dates";
 import { pickPlant } from "./plants";
@@ -53,7 +53,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .then((r) => r.json())
       .then((d) => {
         if (d.state) {
-          setState(d.state);
+          setState({ ...d.state, completions: d.state.completions ?? [] });
           setStatus(afterError ? "error" : "saved");
         } else {
           const seed = seedState();
@@ -137,13 +137,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     completeTask: (id) => {
       const now = today();
+      const task = state.tasks.find((t) => t.id === id);
+      if (!task) return;
+      // the permanent log entry, with the names as they are right now
+      const item = state.items.find((i) => i.id === task.itemId);
+      const roomId = task.roomId ?? item?.roomId ?? null;
+      const entry: Completion = {
+        id: "c-" + uid(), taskId: id, title: task.title, itemId: item?.id ?? null, itemName: item?.name ?? null,
+        roomId, roomName: state.rooms.find((r) => r.id === roomId)?.name ?? null, plant: task.plant, doneOn: now,
+        at: new Date().toISOString(), actor: "ui",
+      };
       mutate((s) => ({
         ...s,
         tasks: s.tasks.map((t) =>
           t.id !== id ? t : { ...t, lastDone: now, dueDate: addInterval(now, t.every, t.unit), history: [now, ...t.history].slice(0, 30) }
         ),
+        completions: [entry, ...s.completions],
       }));
-      send(`/api/tasks/${id}/complete`, json("POST", { date: now }));
+      send(`/api/tasks/${id}/complete`, json("POST", { date: now, id: entry.id }));
     },
     saveRoom: (r) => {
       const full = { ...blankRoom(), ...r } as Room;
@@ -165,8 +176,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       send("/api/floors", json("POST", { name }));
     },
     replaceAll: (s) => {
-      setState(s);
-      send("/api/state", json("PUT", s));
+      setState({ ...s, completions: s.completions ?? [] });
+      // an older backup carries no log: the server rebuilds it from each ritual's history, so fetch what it ended up with
+      send("/api/state", json("PUT", s), () => load());
     },
     resetToSample: () => {
       const seed = seedState();

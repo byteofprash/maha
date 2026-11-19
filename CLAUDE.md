@@ -31,6 +31,15 @@ same for rituals created by the MCP agent. The ritual dialog can shuffle it.
 - Rituals page uses the compact tile (about a quarter of the full tile's area); Today and House use the full tile.
 - Logic checks: `npm run check` (icon rules + `scripts/check-rituals.ts`), also run by the deploy workflow.
 
+## The tended log
+Every "Tended to it" is written to a permanent `completions` table (the ritual's name plus the item and room *as they were at that moment*,
+the day it was tended, and an exact timestamp). It has no foreign keys on purpose: entries must still read correctly after a ritual, item
+or room is renamed or deleted. `task_history` is only the capped (30) per-ritual view used by the cards. The log is part of `State`
+(newest first, latest 5000; `GET /api/completions` filters the rest), so export/import carry it; an older backup without it is rebuilt from
+each ritual's history, as is an existing database the first time it starts (dates only, no time). "Reset to sample data" clears it.
+The House page shows it (`src/components/tended-list.tsx`): grouped by day with the time, for the selected room or the whole house.
+Display logic is `src/lib/completions.ts` (tested). The MCP agent reads it with `list_completions`.
+
 ## House page
 The plan is a simple grid, **5 tiles wide and 10 long** (a narrow house): `GRID` in `src/lib/types.ts` and `server/layout.mjs` (keep in
 sync). Rooms can't leave it: the UI clamps drags, the API rejects out-of-bounds rooms, and anything imported or already stored

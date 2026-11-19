@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { RitualTile } from "@/components/ritual-tile";
+import { TendedList } from "@/components/tended-list";
 import { ItemDialog, RoomDialog, TaskDialog } from "@/components/dialogs";
 import { ItemIcon } from "@/lib/item-icons";
 import { useStore } from "@/lib/store";
@@ -199,6 +200,8 @@ export default function House() {
             </CardHeader>
           </Card>
         )}
+
+        <TendedList completions={state.completions} room={selected ? { id: selected.id, name: selected.name } : null} />
 
         {unplaced.length > 0 && (
           <Card>

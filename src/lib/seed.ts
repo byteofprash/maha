@@ -71,5 +71,6 @@ export function seedState(): State {
     rooms: Object.values(rooms),
     items: Object.values(items),
     tasks,
+    completions: [],
   };
 }

@@ -17,7 +17,7 @@ Stack: Vite + React + TypeScript + Tailwind + shadcn/ui (hand-written components
 - `EPHEMERAL_STORAGE=1` shows the "storage not durable" banner (only for hosts without a volume)
 
 ## Storage
-SQLite (WAL) with real tables: `rooms`, `items`, `tasks`, `task_history`, `floors`, `audit_log`. Foreign keys are enforced
+SQLite (WAL) with real tables: `rooms`, `items`, `tasks`, `task_history`, `completions`, `floors`, `audit_log`. Foreign keys are enforced
 (deleting a room/item nulls the references on items/tasks). Every write is validated server-side and recorded in `audit_log`
 (`GET /api/audit`), with the actor taken from the `X-Actor` header (default `ui`) so agent writes are distinguishable.
 A consistent backup is written to `DATA_DIR/backups/maha-YYYY-MM-DD.db` on start and daily (last 7 kept).
@@ -26,13 +26,14 @@ On first start an existing `state.json` is imported and renamed to `state.json.m
 ## API
 - `GET /api/state`, `PUT /api/state` (bulk replace: import / reset)
 - `PUT|DELETE /api/{rooms,items,tasks}/:id`, `POST /api/tasks/:id/complete` (`{date?}`), `POST /api/floors` (`{name}`)
+- `GET /api/completions?room=&task=&since=&limit=` (the permanent log of everything tended to, newest first)
 - `GET /api/audit?limit=`
 
 ## MCP server (agent access)
 Streamable HTTP, stateless, at `POST /mcp` on the same port. It uses the same auth as the app: with `MAHA_PASSWORD` set, send
 `Authorization: Bearer <password>` (Basic also works). All writes are audited with actor `agent`.
 
-Tools: `get_overview`, `search_items`, `get_item`, `search_tasks` (read); `add_item`, `update_item`, `add_task`, `update_task`,
+Tools: `get_overview`, `search_items`, `get_item`, `search_tasks`, `list_completions` (read); `add_item`, `update_item`, `add_task`, `update_task`,
 `complete_task` (write); `delete_item`, `delete_task` (require `confirm: true`; the tool descriptions tell the model to ask you first).
 Rooms are referenced by name. Room layout (add/move rooms, floors) is intentionally UI-only for now.
 
