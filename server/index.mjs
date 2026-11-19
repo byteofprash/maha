@@ -19,6 +19,8 @@ const app = express();
 // ---- optional password gate -------------------------------------------------
 app.use((req, res, next) => {
   if (!PASSWORD) return next();
+  // Liveness probe for the deploy check / Docker: returns only {ok:true}, so it is safe to leave open.
+  if (req.path === "/api/health") return next();
   // Calendar apps can't send Basic auth, so the .ics feed also accepts ?token=
   if (req.path === "/api/tasks.ics" && req.query.token === PASSWORD) return next();
   const [scheme, b64] = (req.headers.authorization || "").split(" ");
