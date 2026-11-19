@@ -26,9 +26,10 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Check (typecheck + build)     # swap for the project's tests, e.g. pytest -q
+      - name: Check (icon rules, typecheck, build)     # swap for the project's tests, e.g. pytest -q
         run: |
           npm ci --no-audit --no-fund
+          npm run check:icons
           npm run build
 
       - name: Set up SSH

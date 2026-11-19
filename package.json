@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "start": "node server/index.mjs"
+    "start": "node server/index.mjs",
+    "check:icons": "esbuild scripts/check-icons.ts --bundle --platform=node --format=esm --outfile=.tmp/check-icons.mjs --log-level=error && node .tmp/check-icons.mjs | tail -3"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
