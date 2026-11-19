@@ -9,16 +9,20 @@ services:
     environment:
       - MAHA_PASSWORD=${MAHA_PASSWORD:-}
     volumes:
-      - maha-data:/app/data   # SQLite DB + backups
+      # SQLite DB + backups live on the attached Hetzner volume. Set MAHA_DATA_DIR in ~/maha/.env on the server
+      # (e.g. /mnt/HC_Volume_123456/maha). The folder must already exist: if the volume isn't mounted, start fails
+      # loudly instead of silently creating an empty database on the root disk.
+      - type: bind
+        source: ${MAHA_DATA_DIR:?set MAHA_DATA_DIR in .env to a folder on the Hetzner volume}
+        target: /app/data
+        bind:
+          create_host_path: false
     networks: [proxy]
     labels:
       - traefik.enable=true
       - traefik.http.routers.maha.rule=Host(`maha.byteofprash.com`)
       - traefik.http.routers.maha.entrypoints=web
       - traefik.http.services.maha.loadbalancer.server.port=3000
-
-volumes:
-  maha-data:
 
 networks:
   proxy:
