@@ -1,0 +1,77 @@
+name: Deploy to Hetzner
+# Recipe: copy this file into a new project, change APP below (must match the folder + container name in docker-compose.yml),
+# list the app's runtime secrets in the "Write .env" step, and add the repo secrets (see README / docs/deploy-recipe.md).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # also runnable by hand from the GitHub app/site
+
+concurrency:
+  group: deploy-hetzner
+  cancel-in-progress: false
+
+env:
+  APP: maha                                   # <- the only per-project value in the plumbing
+  SSH_PORT: ${{ secrets.HETZNER_PORT || 22 }}
+  TARGET: ${{ secrets.HETZNER_USER }}@${{ secrets.HETZNER_HOST }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check (typecheck + build)     # swap for the project's tests, e.g. pytest -q
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.HETZNER_SSH_KEY }}
+          SSH_PASSPHRASE: ${{ secrets.HETZNER_SSH_PASSPHRASE }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          if [ -n "$SSH_PASSPHRASE" ]; then
+            ssh-keygen -p -P "$SSH_PASSPHRASE" -N "" -f ~/.ssh/id_deploy >/dev/null \
+              || { echo "::error::HETZNER_SSH_PASSPHRASE did not unlock the key."; exit 1; }
+          fi
+          ssh-keygen -y -P "" -f ~/.ssh/id_deploy > ~/.ssh/id_deploy.pub \
+            || { echo "::error::HETZNER_SSH_KEY is not a valid private key (paste the whole key incl. BEGIN/END lines)."; exit 1; }
+          echo "Deploy key (must be in the server's ~/.ssh/authorized_keys):"; ssh-keygen -lf ~/.ssh/id_deploy.pub
+          ssh-keyscan -p "$SSH_PORT" "${{ secrets.HETZNER_HOST }}" >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o BatchMode=yes -p "$SSH_PORT" "$TARGET" 'echo login ok' \
+            || { echo "::error::Server rejected the key for ${{ secrets.HETZNER_USER }}."; exit 1; }
+
+      - name: Sync code
+        run: |
+          rsync -az --delete --exclude .git --exclude .env --exclude node_modules --exclude dist --exclude data \
+            -e "ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o BatchMode=yes -p $SSH_PORT" \
+            ./ "$TARGET:$APP/"
+
+      - name: Write .env, build and start
+        env:
+          MAHA_PASSWORD: ${{ secrets.MAHA_PASSWORD }}     # <- list this app's runtime secrets here
+        run: |
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o BatchMode=yes -p "$SSH_PORT" "$TARGET" \
+            "APP='$APP' MAHA_PASSWORD='$MAHA_PASSWORD' bash -s" <<'REMOTE'
+          set -e
+          cd ~/"$APP"
+          umask 077
+          printf 'MAHA_PASSWORD=%s\n' "$MAHA_PASSWORD" > .env
+          docker compose up -d --build
+          docker compose ps
+          for i in $(seq 1 20); do
+            docker compose exec -T "$APP" node -e "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" \
+              && { echo "healthy"; exit 0; }
+            sleep 2
+          done
+          echo "::error::$APP did not become healthy"; docker compose logs --tail 40 "$APP"; exit 1
+          REMOTE

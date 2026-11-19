@@ -42,6 +42,8 @@ For claude.ai custom connectors, which expect OAuth rather than a static token, 
 ## Deploy (Hetzner: Traefik + Cloudflare Tunnel)
 Served at `https://maha.byteofprash.com` (change the Host rule in `docker-compose.yml` for another subdomain). On the server:
 
+Normally the Action does this (see below). By hand, once:
+
     git clone <repo> ~/maha && cd ~/maha
     echo 'MAHA_PASSWORD=<choose one>' > .env      # needed for the MCP endpoint and the calendar feed token
     docker compose up -d --build
@@ -52,7 +54,19 @@ for `maha.byteofprash.com` with an Allow policy for your email. Verify with `doc
 Access will also gate `/mcp` and `/api/tasks.ics`, which non-browser clients can't pass. Add a second Access application for
 path `maha.byteofprash.com/mcp` (and `/api/tasks.ics`) with a Bypass policy; those paths are protected by `MAHA_PASSWORD` instead.
 
-Update: `git pull && docker compose up -d --build`. The data lives in the `maha-data` volume; copy `backups/*.db` off the box.
+## Auto-deploy (GitHub Actions)
+`.github/workflows/deploy.yml` runs on every push to `main` (and by hand from the Actions tab): typecheck + build, rsync the code to
+`~/maha` on the server over SSH, write `.env` from secrets, `docker compose up -d --build`, then wait for `/api/health`.
+Add these repo secrets (Settings > Secrets and variables > Actions):
+
+| Secret | Value |
+|---|---|
+| `HETZNER_HOST`, `HETZNER_USER`, optional `HETZNER_PORT` | same as the ey430 repo |
+| `HETZNER_SSH_KEY`, optional `HETZNER_SSH_PASSPHRASE` | dedicated deploy private key; its public half is in the server's `~/.ssh/authorized_keys` |
+| `MAHA_PASSWORD` | the app password (also the MCP bearer token) |
+
+Requires SSH to be reachable from GitHub runners. The data lives in the `maha-data` volume and is never touched by a deploy;
+copy `backups/*.db` off the box.
 
 ## Ideas / next
 - OAuth for the MCP endpoint (needed for claude.ai custom connectors); in-app chat panel on the same tools
