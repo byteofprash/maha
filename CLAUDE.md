@@ -63,7 +63,7 @@ manual override**, not ad-hoc code or an LLM call: fast, free, testable, and the
 A lotus mandala (8 outer + 8 inner rose petals) with a gold **bindu**, the still point, at its heart: the ritual flower. Dotted sage halo on
 the full version only. `src/components/logo.tsx` (`LogoMark` full/small, `Logo` = mark + wordmark for the header); static files in `public/`
 (`logo.svg` full, `favicon.svg` small, PNGs for tab/iOS/192/512). Alternative concepts (incl. the drop-of-water centre) are in `design/logo/`.
-Use the small variant at <= 48px (the halo turns to fuzz). Palette: rose #ffc2d1 > #f4789b, deep rose #e5557f, gold #ffe08a > #f2a93b, sage #86bf8f.
+Use the small variant at <= 48px (the halo turns to fuzz). The small variant's viewBox is cropped to the petals (`8 8 104 104`), so it fills its box; header mark is 46px. Palette: rose #ffc2d1 > #f4789b, deep rose #e5557f, gold #ffe08a > #f2a93b, sage #86bf8f.
 
 ## Naming
 The app is **AHAM**, renamed from MAHA. All user-facing text says AHAM. The **deployment identifiers are still `maha` on purpose**: GitHub

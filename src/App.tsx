@@ -32,7 +32,7 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-2.5">
           <Logo />
           <nav className="ml-2 hidden gap-1 sm:flex">
             {NAV.map(({ id, label, icon: Icon }) => (
