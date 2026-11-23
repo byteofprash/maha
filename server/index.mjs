@@ -1,6 +1,7 @@
 // Single-process server: serves the built UI and the SQLite-backed REST API.
 import express from "express";
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { openDb, ValidationError } from "./db.mjs";
@@ -20,20 +21,27 @@ const app = express();
 // The brand icons must be fetchable without logging in: iOS downloads the home-screen icon in a separate background request that
 // carries no credentials, so a gated icon silently falls back to a plain letter. They show nothing private.
 const PUBLIC_ICONS = new Set(["/apple-touch-icon.png", "/favicon.svg", "/favicon-32.png", "/icon-192.png", "/icon-512.png", "/logo.svg"]);
+// Constant-time comparison, so the password can't be guessed from how long a wrong attempt takes.
+const same = (a, b) => {
+  const x = Buffer.from(String(a ?? "")), y = Buffer.from(String(b));
+  return x.length === y.length && crypto.timingSafeEqual(x, y);
+};
 app.use((req, res, next) => {
   if (!PASSWORD) return next();
   if (PUBLIC_ICONS.has(req.path)) return next();
   // Liveness probe for the deploy check / Docker: returns only {ok:true}, so it is safe to leave open.
   if (req.path === "/api/health") return next();
   // Calendar apps can't send Basic auth, so the .ics feed also accepts ?token=
-  if (req.path === "/api/tasks.ics" && req.query.token === PASSWORD) return next();
+  if (req.path === "/api/tasks.ics" && same(req.query.token, PASSWORD)) return next();
   const [scheme, b64] = (req.headers.authorization || "").split(" ");
   if (scheme === "Basic" && b64) {
     const pass = Buffer.from(b64, "base64").toString().split(":").slice(1).join(":");
-    if (pass === PASSWORD) return next();
+    if (same(pass, PASSWORD)) return next();
   }
   // MCP clients usually send a bearer token instead of Basic auth
-  if (scheme === "Bearer" && b64 === PASSWORD) return next();
+  if (scheme === "Bearer" && same(b64, PASSWORD)) return next();
+  // Some connector screens reserve the Authorization header for their own sign-in and only let you add other headers
+  if (same(req.headers["x-api-key"], PASSWORD)) return next();
   res.set("WWW-Authenticate", 'Basic realm="AHAM"').status(401).send("Authentication required");
 });
 

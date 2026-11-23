@@ -31,7 +31,8 @@ On first start an existing `state.json` is imported and renamed to `state.json.m
 
 ## MCP server (agent access)
 Streamable HTTP, stateless, at `POST /mcp` on the same port. It uses the same auth as the app: with `MAHA_PASSWORD` set, send
-`Authorization: Bearer <password>` (Basic also works). All writes are audited with actor `agent`.
+`Authorization: Bearer <password>` (Basic also works), **or `X-API-Key: <password>`** (no "Bearer" prefix) for connector screens that reserve
+the `Authorization` header for their own sign-in. All writes are audited with actor `agent`.
 
 Tools: `get_overview`, `search_items`, `get_item`, `search_tasks`, `list_completions` (read); `add_item`, `update_item`, `add_task`, `update_task`,
 `complete_task` (write); `delete_item`, `delete_task` (require `confirm: true`; the tool descriptions tell the model to ask you first).
