@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode } from "react";
 import { Copy, Download, Upload, Trash2, Shuffle } from "lucide-react";
+import { NotificationSettings } from "@/components/notification-settings";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -282,10 +283,11 @@ export function DataDialog({ onClose, feedPath }: { onClose: () => void; feedPat
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Data & calendar</DialogTitle>
-          <DialogDescription>Backups, restore, and a calendar feed for due dates.</DialogDescription>
+          <DialogTitle>Settings</DialogTitle>
+          <DialogDescription>An evening reminder, backups, and a calendar feed for due dates.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-5 text-sm">
+          <NotificationSettings />
           <section className="space-y-2">
             <p className="font-medium">Backup</p>
             <div className="flex flex-wrap gap-2">

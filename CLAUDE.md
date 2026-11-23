@@ -51,6 +51,19 @@ sync). Rooms can't leave it: the UI clamps drags, the API rejects out-of-bounds 
 off the plan is re-fitted (`fitAll`, reading order, shrinking only as needed; once on startup with a safety copy at
 `backups/pre-layout-refit.db`, and on `PUT /api/state`). Selected-room details reuse `ItemIcon` and `RitualTile`. Checks: `npm run check:layout`.
 
+## Evening reminder (web push)
+A web-push notification every day at **19:00 on each device** ("A little care tomorrow" + the rituals due *tomorrow*; no message when there are
+none). Files: `public/sw.js` (service worker: shows the push, tapping it opens/focuses the app; caches nothing), `public/manifest.webmanifest`
+(standalone; iPhone only allows push from a Home Screen app), `server/push.mjs` (pure time/wording helpers, VAPID keys, sender, scheduler),
+`src/lib/push.ts` + `src/components/notification-settings.tsx` (the "Evening reminder" section of **Settings**; the header button used to say
+"Data"). Rules: once per local day per device (`push_subscriptions.last_sent_on`, survives restarts), window 19:00-22:00, failures retry on the next
+30 s pass, 404/410 removes the device. The VAPID keys live in `meta` (backups contain them). The VAPID contact is the app's own origin, taken
+from the first subscribe request (override with `AHAM_VAPID_SUBJECT`); never use a personal email there, it is sent to the push services.
+Checks: `npm run check` includes `check:push` (time zones, DST, scheduler on a real DB with a fake clock/sender, failures, encryption round trip)
+and `check:sw` (the worker's logic). **Browser tests of notifications need full Chromium: `chromium.launch({ channel: 'chromium' })`**, because the default
+headless shell reports `Notification.permission` as denied even after granting it. A real push can be delivered to a worker via the DevTools
+protocol (`ServiceWorker.deliverPushMessage`).
+
 ## Small decision models
 Small, repeatable judgements (like "which icon for this product?") are **deterministic rule tables with an explanation and a
 manual override**, not ad-hoc code or an LLM call: fast, free, testable, and the UI can say why it chose.

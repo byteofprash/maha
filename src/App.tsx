@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Cloud, CloudOff, Database, Flower2, Home, LayoutDashboard, Loader2, Package } from "lucide-react";
+import { Cloud, CloudOff, Flower2, Home, LayoutDashboard, Loader2, Package, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataDialog } from "@/components/dialogs";
 import Today from "@/views/Today";
@@ -46,7 +46,7 @@ export default function App() {
               {status === "saving" || status === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : status === "error" ? <CloudOff className="h-3.5 w-3.5 text-destructive" /> : <Cloud className="h-3.5 w-3.5" />}
               {status === "error" ? "Not saved" : status === "saved" ? "Saved" : "Saving…"}
             </span>
-            <Button size="sm" variant="outline" onClick={() => setData(true)}><Database /> Data</Button>
+            <Button size="sm" variant="outline" onClick={() => setData(true)}><Settings /> Settings</Button>
           </div>
         </div>
       </header>
@@ -54,7 +54,7 @@ export default function App() {
       {cfg.ephemeral && !hideWarn && (
         <div className="border-b bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
           <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2 text-xs">
-            <span className="flex-1">Storage on this host is not durable: redeploying the app wipes your data. Export a backup from <b>Data</b> after big changes.</span>
+            <span className="flex-1">Storage on this host is not durable: redeploying the app wipes your data. Export a backup from <b>Settings</b> after big changes.</span>
             <button className="underline" onClick={() => setData(true)}>Back up</button>
             <button aria-label="Dismiss" onClick={() => setHideWarn(true)}>✕</button>
           </div>

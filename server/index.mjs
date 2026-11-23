@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { openDb, ValidationError } from "./db.mjs";
 import { mountMcp } from "./mcp.mjs";
+import { NOTIFY_AT, ensureSubject, ensureVapid, makeSender, startNotifier } from "./push.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3000);
@@ -20,7 +21,8 @@ const app = express();
 // ---- optional password gate -------------------------------------------------
 // The brand icons must be fetchable without logging in: iOS downloads the home-screen icon in a separate background request that
 // carries no credentials, so a gated icon silently falls back to a plain letter. They show nothing private.
-const PUBLIC_ICONS = new Set(["/apple-touch-icon.png", "/favicon.svg", "/favicon-32.png", "/icon-192.png", "/icon-512.png", "/logo.svg"]);
+// The web manifest and service worker are public for the same reason (iOS reads the manifest when you add the app to the Home Screen).
+const PUBLIC_ICONS = new Set(["/apple-touch-icon.png", "/favicon.svg", "/favicon-32.png", "/icon-192.png", "/icon-512.png", "/logo.svg", "/manifest.webmanifest", "/sw.js"]);
 // Constant-time comparison, so the password can't be guessed from how long a wrong attempt takes.
 const same = (a, b) => {
   const x = Buffer.from(String(a ?? "")), y = Buffer.from(String(b));
@@ -127,6 +129,37 @@ app.post("/api/tasks/:id/complete", wrap((req, res) => {
   if (!task) return res.status(404).json({ error: "task not found" });
   res.json({ task });
 }));
+
+// ---- evening reminder (web push) ---------------------------------------------------------------------------
+const sendPush = makeSender(store);
+startNotifier({ store, send: sendPush });
+const originOf = (req) => {
+  const host = req.get("x-forwarded-host") || req.get("host") || "";
+  return /^localhost(:\d+)?$/.test(host) ? `http://${host}` : `https://${host}`;
+};
+app.get("/api/push/config", wrap((_req, res) => res.json({ publicKey: ensureVapid(store).publicKey, at: NOTIFY_AT })));
+app.post("/api/push/subscribe", wrap((req, res) => {
+  const s = req.body?.subscription;
+  store.addPushSubscription({ endpoint: s?.endpoint, p256dh: s?.keys?.p256dh, auth: s?.keys?.auth, tz: req.body?.tz, label: req.get("user-agent") || "" });
+  ensureSubject(store, originOf(req));
+  res.json({ ok: true, at: NOTIFY_AT });
+}));
+app.post("/api/push/unsubscribe", wrap((req, res) => res.json({ ok: store.removePushSubscription(req.body?.endpoint) })));
+app.post("/api/push/test", async (req, res) => {
+  try {
+    const sub = store.getPushSubscription(req.body?.endpoint);
+    if (!sub) return res.status(404).json({ error: "this device is not subscribed" });
+    await sendPush(sub, { title: "AHAM", body: "This is how your evening reminder will look.", url: "/", tag: "aham-test" });
+    res.json({ ok: true });
+  } catch (e) {
+    if (e.statusCode === 404 || e.statusCode === 410) {
+      store.removePushSubscription(req.body?.endpoint);
+      return res.status(410).json({ error: "this device's subscription has expired; turn the reminder on again" });
+    }
+    console.error("push test failed:", e.message);
+    res.status(502).json({ error: "the push service did not accept it" });
+  }
+});
 
 // ---- MCP server (agent tools) -----------------------------------------------------
 mountMcp(app, store);

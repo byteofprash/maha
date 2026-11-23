@@ -83,6 +83,22 @@ deploy generates `~/maha/.env` on the server (`cat ~/maha/.env` to read `MAHA_PA
 Requires SSH to be reachable from GitHub runners. The data lives on the Hetzner volume at `MAHA_DATA_DIR` (see below) and is never touched by a deploy;
 copy `backups/*.db` off the box.
 
+## Evening reminder (web push)
+Every day at **19:00 on the device** (its own time zone, daylight saving included), each subscribed device gets one notification, "A little
+care tomorrow", naming the rituals that come round **tomorrow**. Nothing is sent on days when nothing comes round.
+- Turn it on in **Settings** (header) > Evening reminder, on each device you want it on; "Send me a test" shows what it looks like.
+- **iPhone:** push only works from the Home Screen app. Add AHAM to the Home Screen (Safari > Share > Add to Home Screen) and turn the
+  reminder on from there. An icon added *before* the app had a web manifest must be deleted and added again.
+- Cloudflare Access: add Bypass for `/manifest.webmanifest`, `/sw.js` and the icons (`/apple-touch-icon.png`, `/icon-192.png`, ...). Phones fetch
+  these without a login; they hold nothing private (the app also serves them without the password).
+- How: `public/sw.js` (the service worker that shows it) + `server/push.mjs` (scheduler, wording, sender). A device's subscription lives in
+  the `push_subscriptions` table, the signing (VAPID) keys in the database `meta` table (so **backups contain them**: treat them like the DB).
+  The contact address given to push services is the app's own address, remembered from the first subscription.
+- Env (all optional): `AHAM_NOTIFY_AT` (default `19:00`), `AHAM_VAPID_SUBJECT` (override the contact address), `AHAM_PUSH_DRY_RUN=1` (log instead of sending).
+- API: `GET /api/push/config`, `POST /api/push/subscribe`, `POST /api/push/unsubscribe`, `POST /api/push/test`.
+- Send rules: once per local day per device, from 19:00 until 22:00 (if the server was down at 19:00 it catches up), failures retry next pass,
+  a device the push service reports as gone (404/410) is forgotten.
+
 ## Naming
 The app is **AHAM** (Sanskrit *aham*, "I", the self). It was called MAHA; user-facing text now says AHAM, but the **deployment identifiers
 are still `maha` on purpose** (GitHub repo, server folder `~/maha`, container / image / compose service / Traefik router, the host

@@ -59,6 +59,17 @@ CREATE INDEX IF NOT EXISTS idx_completions_task ON completions(task_id);
 CREATE INDEX IF NOT EXISTS idx_completions_room ON completions(room_id);
 CREATE INDEX IF NOT EXISTS idx_items_room ON items(room_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_due ON tasks(due_date);
+-- One row per device that asked for the evening reminder (a browser's push subscription). last_sent_on makes the daily
+-- send happen once per local day even across restarts.
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  endpoint TEXT PRIMARY KEY,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  tz TEXT NOT NULL,
+  label TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  last_sent_on TEXT
+);
 CREATE TABLE IF NOT EXISTS audit_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
@@ -405,6 +416,30 @@ export function openDb(dataDir) {
       return idx;
     });
 
+  // ---- small settings + evening-reminder subscriptions -------------------------------------------
+  const getMeta = (k) => q("SELECT value FROM meta WHERE key=?").get(k)?.value ?? null;
+  const setMeta = (k, v) => { q("INSERT OR REPLACE INTO meta (key, value) VALUES (?,?)").run(k, String(v)); };
+
+  /** Titles of the rituals due on a given day (yyyy-mm-dd), for the evening "tomorrow" reminder. */
+  const tasksDueOn = (d) => q("SELECT title FROM tasks WHERE due_date = ? ORDER BY title").all(date(d, "date")).map((r) => r.title);
+
+  const validTz = (tz) => { try { new Intl.DateTimeFormat("en-CA", { timeZone: tz }); return typeof tz === "string" && tz.length > 0; } catch { return false; } };
+  const b64url = (v, k) => { if (typeof v !== "string" || !/^[A-Za-z0-9_-]{8,256}$/.test(v)) bad(`${k} is invalid`); return v; };
+
+  const addPushSubscription = ({ endpoint, p256dh, auth, tz, label }) => {
+    if (typeof endpoint !== "string" || !/^https:\/\//.test(endpoint) || endpoint.length > 2000) bad("endpoint must be an https URL");
+    if (!validTz(tz)) bad("tz must be an IANA time zone such as Europe/Berlin");
+    q(`INSERT INTO push_subscriptions (endpoint, p256dh, auth, tz, label) VALUES (?,?,?,?,?)
+       ON CONFLICT(endpoint) DO UPDATE SET p256dh=excluded.p256dh, auth=excluded.auth, tz=excluded.tz, label=excluded.label`)
+      .run(endpoint, b64url(p256dh, "p256dh"), b64url(auth, "auth"), tz, typeof label === "string" ? label.slice(0, 80) : "");
+  };
+  const removePushSubscription = (endpoint) => q("DELETE FROM push_subscriptions WHERE endpoint=?").run(String(endpoint)).changes > 0;
+  const listPushSubscriptions = () =>
+    q("SELECT endpoint, p256dh, auth, tz, label, last_sent_on AS lastSentOn FROM push_subscriptions ORDER BY created_at").all();
+  const getPushSubscription = (endpoint) =>
+    q("SELECT endpoint, p256dh, auth, tz, label, last_sent_on AS lastSentOn FROM push_subscriptions WHERE endpoint=?").get(String(endpoint)) ?? null;
+  const markPushSent = (endpoint, d) => { q("UPDATE push_subscriptions SET last_sent_on=? WHERE endpoint=?").run(date(d, "date"), String(endpoint)); };
+
   /** The log, newest first. Optional filters: a room (by id), a ritual (by id), entries from `since` (yyyy-mm-dd) on. */
   const listCompletions = ({ roomId, taskId, since, limit = 100 } = {}) => {
     const where = [], args = [];
@@ -451,5 +486,6 @@ export function openDb(dataDir) {
     db, dbPath, isInitialized, getState, replaceState,
     upsertRoom, deleteRoom, upsertItem, deleteItem, upsertTask, deleteTask, completeTask, addFloor,
     listAudit, backupTo, refitLayout, listCompletions,
+    getMeta, setMeta, tasksDueOn, addPushSubscription, removePushSubscription, listPushSubscriptions, getPushSubscription, markPushSent,
   };
 }

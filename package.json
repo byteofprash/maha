@@ -9,8 +9,10 @@
     "start": "node server/index.mjs",
     "check:icons": "esbuild scripts/check-icons.ts --bundle --platform=node --format=esm --outfile=.tmp/check-icons.mjs --log-level=error && node .tmp/check-icons.mjs | tail -3",
     "check:rituals": "esbuild scripts/check-rituals.ts --bundle --platform=node --format=esm --outfile=.tmp/check-rituals.mjs --log-level=error && node .tmp/check-rituals.mjs",
-    "check": "npm run check:icons && npm run check:rituals && npm run check:layout",
-    "check:layout": "node scripts/check-layout.mjs"
+    "check": "npm run check:icons && npm run check:rituals && npm run check:layout && npm run check:push && npm run check:sw",
+    "check:layout": "node scripts/check-layout.mjs",
+    "check:push": "NODE_NO_WARNINGS=1 node scripts/check-push.mjs",
+    "check:sw": "node scripts/check-sw.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
@@ -23,6 +25,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.5.4",
+    "web-push": "^4.0.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
